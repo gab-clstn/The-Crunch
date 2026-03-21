@@ -1,17 +1,13 @@
 import React from "react";
-import { useCart } from "./Cart_Context"; // 1. Import the hook
+import { useCart } from "./Cart_Context";
+import { imageMap } from "./assets/imageMap"; 
 
 const ProductCard = ({ product }) => {
-    // Mapping from your Firebase fields:
     const { name, price, description, imageUrl, available, category } = product;
-
-    // 2. Access the addToCart function from our context
     const { addToCart } = useCart();
 
-    const handleAddClick = () => {
-        addToCart(product);
-        // Optional: You could add a small "Added!" toast or alert here
-    };
+    // Use local image if available, fallback to Firebase URL, then placeholder
+    const imageSrc = imageMap[name] || imageUrl || "https://via.placeholder.com/300x200?text=No+Image";
 
     return (
         <div style={{
@@ -21,13 +17,11 @@ const ProductCard = ({ product }) => {
         }}>
             <div style={styles.imageContainer}>
                 <div style={styles.categoryBadge}>{category}</div>
-
                 <img
-                    src={imageUrl || "https://via.placeholder.com/300x200?text=No+Image"}
+                    src={imageSrc}  // ✅ now uses local image
                     alt={name}
                     style={styles.image}
                 />
-
                 <div style={styles.priceBadge}>₱{price}</div>
             </div>
 
