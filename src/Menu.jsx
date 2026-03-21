@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
-import { getProducts } from "../../services/Product_Service";
-import ProductCard from "../../components/customer/Menu_Card";
+import { getProducts } from "./Product_Service";
+import ProductCard from "./Menu_Card";
 import { collection, getDocs } from "firebase/firestore";
-import { db } from "../../services/firebase";
-import { useCart } from "../../context/Cart_Context";
+import { db } from "./firebase";
+import { useCart } from "./Cart_Context";
 
 const fetchProducts = async () => {
     const querySnapshot = await getDocs(collection(db, "products"));
