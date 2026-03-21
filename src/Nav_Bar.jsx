@@ -1,7 +1,7 @@
 import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "../../context/Auth_Context";
-import { logout } from "../../services/Auth_Service";
-import { useCart } from "../../context/Cart_Context";
+import { useAuth } from "./Auth_Context";
+import { logout } from "./Auth_Service";
+import { useCart } from "./Cart_Context";
 
 const Navbar = () => {
     const { currentUser } = useAuth();
@@ -18,14 +18,8 @@ const Navbar = () => {
 
     const { cartItems } = useCart();
 
-    // Calculate total quantity of items
+    // ✅ Consistent variable name
     const totalItems = cartItems.reduce((sum, item) => sum + item.qty, 0);
-
-    // ... in your JSX find the Cart link
-    <Link style={styles.cartLink} to="/cart">
-        CART <span style={styles.cartBadge}>{itemCount}</span>
-    </Link>
-    
 
     return (
         <nav style={styles.nav}>
@@ -38,7 +32,6 @@ const Navbar = () => {
                 <Link style={styles.link} to="/">HOME</Link>
                 <Link style={styles.link} to="/menu">MENU</Link>
 
-                {/* Check if user is logged in */}
                 {currentUser ? (
                     <div style={styles.userGroup}>
                         <span style={styles.userLabel}>HI, {currentUser.name?.toUpperCase()}</span>
@@ -48,8 +41,9 @@ const Navbar = () => {
                     <Link style={styles.link} to="/auth">LOGIN / SIGN UP</Link>
                 )}
 
+                {/* ✅ Moved inside return, using totalItems */}
                 <Link style={styles.cartLink} to="/cart">
-                    CART<span style={styles.cartBadge}>{totalItems}</span>
+                    CART <span style={styles.cartBadge}>{totalItems}</span>
                 </Link>
             </div>
         </nav>

@@ -1,5 +1,5 @@
 import React from "react";
-import { useCart } from "../../context/Cart_Context"; // 1. Import the hook
+import { useCart } from "./Cart_Context"; // 1. Import the hook
 
 const ProductCard = ({ product }) => {
     // Mapping from your Firebase fields:

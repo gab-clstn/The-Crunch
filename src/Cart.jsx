@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { submitOrder } from "../../services/Cart_Service";
-import { useAuth } from "../../context/Auth_Context";
-import { useCart } from "../../context/Cart_Context";
+import { useAuth } from "./Auth_Context";
+import { useCart } from "./Cart_Context";
+import { placeOrder } from "./Orders_Service";
 
 const Cart = () => { // Remove the ({ cartItems }) part
     const [loading, setLoading] = useState(false);
