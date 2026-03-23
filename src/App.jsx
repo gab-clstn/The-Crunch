@@ -15,13 +15,15 @@ function App() {
       <CartProvider>
         <Router>
           <Navbar />
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/menu" element={<Menu />} />
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/cart" element={<Cart />} />
-            <Route path="/admin" element={<AdminPanel />} />
-          </Routes>
+          <div style={{ marginTop: "80px" }}>
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/menu" element={<Menu />} />
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/cart" element={<Cart />} />
+              <Route path="/admin" element={<AdminPanel />} />
+            </Routes>
+          </div>
         </Router>
       </CartProvider>
     </AuthProvider>
