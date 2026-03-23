@@ -6,14 +6,9 @@ export const CartProvider = ({ children }) => {
     const [cartItems, setCartItems] = useState([]);
 
     const addToCart = (product) => {
-        console.log("Adding to cart:", product); // Check your console!
-        
         setCartItems((prev) => {
-            // Force prev to be an array if it's not
             const safePrev = Array.isArray(prev) ? prev : [];
-            
             const existingItem = safePrev.find((item) => item.id === product.id);
-            
             if (existingItem) {
                 return safePrev.map((item) =>
                     item.id === product.id ? { ...item, qty: item.qty + 1 } : item
@@ -23,10 +18,21 @@ export const CartProvider = ({ children }) => {
         });
     };
 
+    const updateQty = (id, newQty) => {
+        if (newQty <= 0) {
+            // Remove item if qty hits 0
+            setCartItems(prev => prev.filter(item => item.id !== id));
+        } else {
+            setCartItems(prev => prev.map(item =>
+                item.id === id ? { ...item, qty: newQty } : item
+            ));
+        }
+    };
+
     const clearCart = () => setCartItems([]);
 
     return (
-        <CartContext.Provider value={{ cartItems, addToCart, clearCart }}>
+        <CartContext.Provider value={{ cartItems, addToCart, updateQty, clearCart }}>
             {children}
         </CartContext.Provider>
     );
