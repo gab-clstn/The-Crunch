@@ -4,7 +4,7 @@ import { logout } from "./Auth_Service";
 import { useCart } from "./Cart_Context";
 
 const Navbar = () => {
-    const { currentUser, isAdmin } = useAuth(); // ✅ added isAdmin
+    const { currentUser, isAdmin } = useAuth();
     const navigate = useNavigate();
 
     const handleLogout = async () => {
@@ -30,7 +30,6 @@ const Navbar = () => {
                 <Link style={styles.link} to="/">HOME</Link>
                 <Link style={styles.link} to="/menu">MENU</Link>
 
-                {/* ✅ Only visible to admins */}
                 {isAdmin && (
                     <Link style={styles.adminLink} to="/admin">ADMIN</Link>
                 )}
@@ -53,10 +52,11 @@ const Navbar = () => {
 };
 
 const styles = {
-    // ... all your existing styles unchanged ...
     nav: {
-        position: "sticky",
+        position: "fixed",
         top: 0,
+        left: 0,
+        right: 0,
         zIndex: 1000,
         backgroundColor: "#FFC72C",
         padding: "15px 8%",
@@ -70,8 +70,6 @@ const styles = {
     logoCrunch: { fontFamily: "'Oswald', sans-serif", fontSize: "32px", fontWeight: "bold", color: "#1A1A1A", fontStyle: "italic" },
     links: { display: "flex", alignItems: "center", gap: "40px" },
     link: { textDecoration: "none", color: "#1A1A1A", fontFamily: "'Public Sans', sans-serif", fontWeight: "800", fontSize: "14px", letterSpacing: "1px" },
-
-    // ✅ New admin link style — red to stand out
     adminLink: {
         textDecoration: "none",
         color: "#fff",
@@ -84,7 +82,6 @@ const styles = {
         border: "2px solid #1A1A1A",
         boxShadow: "3px 3px 0px #1A1A1A",
     },
-
     cartLink: { textDecoration: "none", backgroundColor: "#1A1A1A", color: "#FFC72C", padding: "10px 20px", borderRadius: "4px", fontFamily: "'Oswald', sans-serif", fontWeight: "bold", fontSize: "16px", display: "flex", alignItems: "center", gap: "10px", boxShadow: "4px 4px 0px rgba(0,0,0,0.2)" },
     cartBadge: { backgroundColor: "#FFC72C", color: "#1A1A1A", padding: "2px 8px", borderRadius: "2px", fontSize: "12px" },
     userLabel: { fontFamily: "'Oswald', sans-serif", fontSize: "14px", color: "#1A1A1A", borderRight: "2px solid #1A1A1A", paddingRight: "15px", marginRight: "15px" },
