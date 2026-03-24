@@ -1,293 +1,411 @@
+import { useLocation, useNavigate } from "react-router-dom";
 import { useCart } from "./Cart_Context";
+import { useAuth } from "./Auth_Context";
+import { placeOrder } from "./Order_Service";
+import { imageMap } from "./assets/imageMap";
+import { useState } from "react";
 
-const Cart = ({ isOpen, onClose }) => {
+const Cart = () => {
+    const { state } = useLocation();
+    const navigate = useNavigate();
     const { cartItems, updateQty, clearCart } = useCart();
+    const { currentUser } = useAuth();
+    const [isPlacing, setIsPlacing] = useState(false);
 
-    const total = cartItems.reduce((sum, item) => sum + item.price * item.qty, 0);
+    const orderType = state?.orderType || "Dine In";
+    const deliveryAddress = state?.deliveryAddress || "";
+
+    const subtotal = cartItems.reduce((s, i) => s + i.price * i.qty, 0);
+    const tax = subtotal * 0.12;
+    const deliveryFee = orderType === "Delivery" ? 50 : 0;
+    const total = subtotal + tax + deliveryFee;
+
+    const handleConfirm = async () => {
+        if (!currentUser) {
+            alert("You must be logged in to place an order.");
+            navigate("/auth");
+            return;
+        }
+
+        if (isPlacing) return;
+        setIsPlacing(true);
+
+        try {
+            await placeOrder(currentUser.uid, {
+                items: cartItems.map(i => ({
+                    id: i.id,
+                    name: i.name,
+                    price: i.price,
+                    qty: i.qty,
+                    imageUrl: i.imageUrl || "",
+                })),
+                orderType,
+                deliveryAddress,
+                subtotal,
+                tax,
+                deliveryFee,
+                total,
+            });
+
+            clearCart();
+            navigate("/", { state: { orderSuccess: true } });
+        } catch (err) {
+            console.error("Order failed:", err);
+            alert(`Order failed: ${err.message || "Please try again."}`);
+        } finally {
+            setIsPlacing(false);
+        }
+    };
+
+    const orderTypeIcon = { "Dine In": "🍽️", "Pick-Up": "🏃", "Delivery": "🛵" }[orderType] || "🛒";
 
     return (
-        <>
-            {/* Backdrop */}
-            <div
-                style={{
-                    ...styles.backdrop,
-                    opacity: isOpen ? 1 : 0,
-                    pointerEvents: isOpen ? "all" : "none",
-                }}
-                onClick={onClose}
-            />
+        <div style={s.page}>
+            {/* Left — Order Review */}
+            <div style={s.left}>
+                <button style={s.backBtn} onClick={() => navigate("/menu")}>
+                    ← BACK TO MENU
+                </button>
 
-            {/* Drawer */}
-            <div style={{
-                ...styles.drawer,
-                transform: isOpen ? "translateX(0)" : "translateX(100%)",
-            }}>
-                {/* Header */}
-                <div style={styles.header}>
-                    <div>
-                        <h2 style={styles.headerTitle}>Your Order</h2>
-                        <p style={styles.headerSub}>
-                            {cartItems.length === 0
-                                ? "Nothing here yet!"
-                                : `${cartItems.reduce((s, i) => s + i.qty, 0)} items`}
-                        </p>
-                    </div>
-                    <button style={styles.closeBtn} onClick={onClose}>✕</button>
-                </div>
+                <h1 style={s.pageTitle}>REVIEW YOUR ORDER</h1>
 
-                {/* Items */}
-                <div style={styles.items}>
-                    {cartItems.length === 0 ? (
-                        <div style={styles.empty}>
-                            <div style={{ fontSize: "48px", marginBottom: "12px" }}>🍗</div>
-                            <p style={styles.emptyText}>Add something delicious!</p>
-                        </div>
-                    ) : (
-                        cartItems.map((item) => {
-                            // Build subtitle from flavor + addons + spicy
-                            const details = [
-                                item.flavor,
-                                item.isSpicy && "Spicy",
-                                ...(item.addons?.length ? item.addons : []),
-                            ].filter(Boolean).join(" · ");
-
-                            return (
-                                <div key={item.id} style={styles.item}>
-                                    <div style={styles.itemInfo}>
-                                        <div style={styles.itemName}>
-                                            {item.displayName || item.name}
-                                        </div>
-                                        {details ? (
-                                            <div style={styles.itemDetails}>{details}</div>
-                                        ) : null}
-                                        <div style={styles.itemPrice}>
-                                            ₱{item.price * item.qty}
-                                        </div>
-                                    </div>
-                                    <div style={styles.itemQtyRow}>
-                                        <button
-                                            style={styles.qBtn}
-                                            onClick={() => updateQty(item.id, item.qty - 1)}
-                                        >−</button>
-                                        <span style={styles.qNum}>{item.qty}</span>
-                                        <button
-                                            style={styles.qBtn}
-                                            onClick={() => updateQty(item.id, item.qty + 1)}
-                                        >+</button>
-                                    </div>
-                                </div>
-                            );
-                        })
+                <div style={s.typeBadge}>
+                    <span style={s.typeIcon}>{orderTypeIcon}</span>
+                    <span style={s.typeLabel}>{orderType.toUpperCase()}</span>
+                    {orderType === "Delivery" && deliveryAddress && (
+                        <span style={s.typeAddress}>— {deliveryAddress}</span>
                     )}
                 </div>
 
-                {/* Footer */}
-                {cartItems.length > 0 && (
-                    <div style={styles.footer}>
-                        <div style={styles.totalRow}>
-                            <span style={styles.totalLabel}>Total</span>
-                            <span style={styles.totalAmount}>₱{total}</span>
-                        </div>
-                        <button style={styles.orderBtn}>PLACE ORDER</button>
-                        <button style={styles.clearBtn} onClick={clearCart}>
-                            Clear order
+                {cartItems.length === 0 ? (
+                    <div style={s.emptyWrap}>
+                        <span style={{ fontSize: 48 }}>🛒</span>
+                        <p style={s.emptyText}>Your cart is empty.</p>
+                        <button style={s.goMenuBtn} onClick={() => navigate("/menu")}>
+                            GO TO MENU
                         </button>
+                    </div>
+                ) : (
+                    <div style={s.itemsList}>
+                        {cartItems.map((item) => {
+                            const imgSrc =
+                                (typeof imageMap !== "undefined" && imageMap[item.name]) ||
+                                item.imageUrl ||
+                                "https://via.placeholder.com/64?text=?";
+                            return (
+                                <div key={item.id} style={s.item}>
+                                    <img src={imgSrc} alt={item.name} style={s.itemImg} />
+                                    <div style={s.itemInfo}>
+                                        <p style={s.itemName}>{item.name}</p>
+                                        <p style={s.itemUnit}>₱{item.price} each</p>
+                                    </div>
+                                    <div style={s.qtyBox}>
+                                        <button style={s.qtyBtn} onClick={() => updateQty(item.id, item.qty - 1)}>−</button>
+                                        <span style={s.qtyNum}>{item.qty}</span>
+                                        <button style={s.qtyBtn} onClick={() => updateQty(item.id, item.qty + 1)}>+</button>
+                                    </div>
+                                    <span style={s.itemTotal}>₱{(item.price * item.qty).toFixed(2)}</span>
+                                </div>
+                            );
+                        })}
                     </div>
                 )}
             </div>
-        </>
+
+            {/* Right — Summary & Confirm */}
+            <div style={s.right}>
+                <div style={s.summaryCard}>
+                    <h2 style={s.summaryTitle}>ORDER SUMMARY</h2>
+
+                    <div style={s.summaryRows}>
+                        <div style={s.summaryRow}>
+                            <span style={s.summaryLabel}>Subtotal</span>
+                            <span style={s.summaryValue}>₱{subtotal.toFixed(2)}</span>
+                        </div>
+                        <div style={s.summaryRow}>
+                            <span style={s.summaryLabel}>Tax (12%)</span>
+                            <span style={s.summaryValue}>₱{tax.toFixed(2)}</span>
+                        </div>
+                        {orderType === "Delivery" && (
+                            <div style={s.summaryRow}>
+                                <span style={s.summaryLabel}>Delivery Fee</span>
+                                <span style={s.summaryValue}>₱50.00</span>
+                            </div>
+                        )}
+                        <div style={s.divider} />
+                        <div style={{ ...s.summaryRow, alignItems: "baseline" }}>
+                            <span style={s.totalLabel}>TOTAL</span>
+                            <span style={s.totalValue}>₱{total.toFixed(2)}</span>
+                        </div>
+                    </div>
+
+                    <div style={s.recapBox}>
+                        <span style={s.recapIcon}>{orderTypeIcon}</span>
+                        <div>
+                            <p style={s.recapType}>{orderType}</p>
+                            {orderType === "Delivery" && deliveryAddress && (
+                                <p style={s.recapAddr}>{deliveryAddress}</p>
+                            )}
+                            {orderType === "Pick-Up" && (
+                                <p style={s.recapAddr}>Pick up at the counter when ready.</p>
+                            )}
+                            {orderType === "Dine In" && (
+                                <p style={s.recapAddr}>Your order will be served at your table.</p>
+                            )}
+                        </div>
+                    </div>
+
+                    <button
+                        style={{
+                            ...s.confirmBtn,
+                            opacity: cartItems.length === 0 || isPlacing ? 0.4 : 1,
+                            cursor: cartItems.length === 0 || isPlacing ? "not-allowed" : "pointer",
+                        }}
+                        disabled={cartItems.length === 0 || isPlacing}
+                        onClick={handleConfirm}
+                    >
+                        {isPlacing ? "PLACING ORDER..." : "CONFIRM ORDER ✓"}
+                    </button>
+
+                    <button style={s.cancelBtn} onClick={() => navigate("/menu")}>
+                        Cancel & go back
+                    </button>
+                </div>
+            </div>
+        </div>
     );
 };
 
-const styles = {
-    backdrop: {
-        position: "fixed",
-        inset: 0,
-        backgroundColor: "rgba(0,0,0,0.4)",
-        zIndex: 200,
-        transition: "opacity 0.3s",
-    },
-    drawer: {
-        position: "fixed",
-        top: 0,
-        right: 0,
-        bottom: 0,
-        width: "380px",
-        maxWidth: "95vw",
-        backgroundColor: "#FFF8E7",
-        zIndex: 201,
+const s = {
+    page: {
         display: "flex",
-        flexDirection: "column",
-        transition: "transform 0.35s cubic-bezier(0.4,0,0.2,1)",
-        boxShadow: "-8px 0 32px rgba(0,0,0,0.18)",
-        borderLeft: "3px solid #F5A623",
+        minHeight: "100vh",
+        backgroundColor: "#F5F5F5",
+        fontFamily: "'Public Sans', sans-serif",
     },
-    header: {
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "flex-start",
-        padding: "24px 20px 16px",
-        borderBottom: "2px solid #F5A62333",
-        backgroundColor: "#F5A623",
+    left: {
+        flex: 1,
+        padding: "48px 40px",
+        borderRight: "3px solid #1A1A1A",
     },
-    headerTitle: {
-        fontFamily: "'Nunito', sans-serif",
+    backBtn: {
+        background: "none",
+        border: "2px solid #1A1A1A",
+        padding: "8px 16px",
+        fontFamily: "'Public Sans', sans-serif",
         fontWeight: "900",
-        fontSize: "22px",
-        color: "#3D1C00",
-        margin: 0,
+        fontSize: "12px",
+        letterSpacing: "1px",
+        cursor: "pointer",
+        color: "#1A1A1A",
+        marginBottom: "32px",
+        boxShadow: "2px 2px 0 #1A1A1A",
     },
-    headerSub: {
-        fontFamily: "'Nunito', sans-serif",
+    pageTitle: {
+        fontFamily: "'Oswald', sans-serif",
+        fontSize: "42px",
+        fontWeight: "900",
+        color: "#1A1A1A",
+        margin: "0 0 20px",
+        textTransform: "uppercase",
+    },
+    typeBadge: {
+        display: "inline-flex",
+        alignItems: "center",
+        gap: "8px",
+        backgroundColor: "#FFC72C",
+        border: "2.5px solid #1A1A1A",
+        padding: "6px 16px",
+        marginBottom: "32px",
+        boxShadow: "3px 3px 0 #1A1A1A",
+    },
+    typeIcon: { fontSize: "16px" },
+    typeLabel: {
+        fontFamily: "'Oswald', sans-serif",
+        fontWeight: "700",
+        fontSize: "14px",
+        color: "#1A1A1A",
+        letterSpacing: "1px",
+    },
+    typeAddress: {
+        fontFamily: "'Public Sans', sans-serif",
         fontWeight: "700",
         fontSize: "12px",
-        color: "#7B2000",
-        margin: "2px 0 0",
+        color: "#555",
     },
-    closeBtn: {
-        background: "rgba(0,0,0,0.1)",
-        border: "none",
-        borderRadius: "50%",
-        width: "32px",
-        height: "32px",
-        fontSize: "14px",
-        cursor: "pointer",
-        color: "#3D1C00",
-        fontWeight: "900",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-    },
-    items: {
-        flex: 1,
-        overflowY: "auto",
-        padding: "16px 20px",
-    },
-    empty: {
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        height: "200px",
-    },
-    emptyText: {
-        fontFamily: "'Nunito', sans-serif",
-        fontWeight: "700",
-        fontSize: "14px",
-        color: "#B08050",
-        margin: 0,
-    },
+    itemsList: { display: "flex", flexDirection: "column", gap: "0" },
     item: {
         display: "flex",
-        justifyContent: "space-between",
         alignItems: "center",
-        padding: "12px 0",
-        borderBottom: "1px solid #F5A62322",
+        gap: "16px",
+        padding: "16px 0",
+        borderBottom: "2px solid #e0e0e0",
     },
-    itemInfo: {
-        flex: 1,
+    itemImg: {
+        width: "64px",
+        height: "64px",
+        objectFit: "cover",
+        border: "2.5px solid #1A1A1A",
+        flexShrink: 0,
     },
+    itemInfo: { flex: 1, minWidth: 0 },
     itemName: {
-        fontFamily: "'Nunito', sans-serif",
-        fontWeight: "800",
-        fontSize: "14px",
-        color: "#3D1C00",
-    },
-    // ← NEW: shows "K-Style · Spicy · Kimchi" under the name
-    itemDetails: {
-        fontFamily: "'Nunito', sans-serif",
+        fontFamily: "'Oswald', sans-serif",
+        fontSize: "16px",
         fontWeight: "700",
-        fontSize: "11px",
-        color: "#C8340B",
-        marginTop: "2px",
+        color: "#1A1A1A",
+        margin: "0 0 4px",
+        textTransform: "uppercase",
     },
-    itemPrice: {
-        fontFamily: "'Nunito', sans-serif",
-        fontWeight: "700",
-        fontSize: "13px",
-        color: "#9E6B3A",
-        marginTop: "3px",
+    itemUnit: {
+        fontFamily: "'Public Sans', sans-serif",
+        fontSize: "12px",
+        color: "#888",
+        margin: 0,
     },
-    itemQtyRow: {
+    qtyBox: {
         display: "flex",
         alignItems: "center",
-        border: "2px solid #C8340B",
-        borderRadius: "8px",
+        border: "2.5px solid #1A1A1A",
         overflow: "hidden",
-        marginLeft: "12px",
+        flexShrink: 0,
     },
-    qBtn: {
+    qtyBtn: {
         backgroundColor: "#fff",
         border: "none",
         width: "30px",
-        height: "30px",
+        height: "34px",
         fontSize: "16px",
         fontWeight: "900",
         cursor: "pointer",
-        color: "#C8340B",
-        fontFamily: "'Nunito', sans-serif",
+        fontFamily: "'Oswald', sans-serif",
     },
-    qNum: {
-        fontFamily: "'Nunito', sans-serif",
+    qtyNum: {
+        fontFamily: "'Oswald', sans-serif",
         fontSize: "14px",
         fontWeight: "900",
-        width: "28px",
+        width: "30px",
         textAlign: "center",
-        borderLeft: "1px solid #C8340B33",
-        borderRight: "1px solid #C8340B33",
-        lineHeight: "30px",
-        color: "#3D1C00",
+        borderLeft: "1px solid #1A1A1A",
+        borderRight: "1px solid #1A1A1A",
+        lineHeight: "34px",
     },
-    footer: {
-        padding: "16px 20px 24px",
-        borderTop: "2px solid #F5A62333",
+    itemTotal: {
+        fontFamily: "'Oswald', sans-serif",
+        fontSize: "18px",
+        fontWeight: "900",
+        color: "#1A1A1A",
+        minWidth: "80px",
+        textAlign: "right",
+        flexShrink: 0,
     },
-    totalRow: {
+    emptyWrap: {
         display: "flex",
-        justifyContent: "space-between",
-        alignItems: "baseline",
-        marginBottom: "14px",
+        flexDirection: "column",
+        alignItems: "center",
+        paddingTop: "80px",
+        gap: "16px",
     },
-    totalLabel: {
-        fontFamily: "'Nunito', sans-serif",
-        fontWeight: "800",
-        fontSize: "14px",
-        color: "#9E6B3A",
-        letterSpacing: "2px",
-        textTransform: "uppercase",
+    emptyText: {
+        fontFamily: "'Oswald', sans-serif",
+        fontSize: "22px",
+        color: "#aaa",
+        margin: 0,
     },
-    totalAmount: {
-        fontFamily: "'Nunito', sans-serif",
+    goMenuBtn: {
+        backgroundColor: "#FFC72C",
+        border: "3px solid #1A1A1A",
+        boxShadow: "4px 4px 0 #1A1A1A",
+        padding: "12px 28px",
+        fontFamily: "'Oswald', sans-serif",
         fontWeight: "900",
-        fontSize: "28px",
-        color: "#C8340B",
-    },
-    orderBtn: {
-        width: "100%",
-        backgroundColor: "#C8340B",
-        color: "#fff",
-        border: "none",
-        borderRadius: "10px",
-        padding: "14px",
-        fontFamily: "'Nunito', sans-serif",
-        fontWeight: "900",
-        fontSize: "15px",
-        letterSpacing: "2px",
+        fontSize: "16px",
         cursor: "pointer",
-        marginBottom: "10px",
-        boxShadow: "0 4px 14px rgba(200,52,11,0.35)",
+        color: "#1A1A1A",
+        marginTop: "8px",
     },
-    clearBtn: {
+    right: {
+        width: "360px",
+        flexShrink: 0,
+        padding: "48px 32px",
+        backgroundColor: "#fff",
+        borderLeft: "3px solid #1A1A1A",
+    },
+    summaryCard: {
+        position: "sticky",
+        top: "100px",
+        display: "flex",
+        flexDirection: "column",
+        gap: "0",
+    },
+    summaryTitle: {
+        fontFamily: "'Oswald', sans-serif",
+        fontSize: "22px",
+        fontWeight: "900",
+        color: "#1A1A1A",
+        margin: "0 0 24px",
+        letterSpacing: "1px",
+        borderBottom: "3px solid #1A1A1A",
+        paddingBottom: "12px",
+    },
+    summaryRows: { display: "flex", flexDirection: "column", gap: "10px", marginBottom: "24px" },
+    summaryRow: { display: "flex", justifyContent: "space-between" },
+    summaryLabel: { fontFamily: "'Public Sans', sans-serif", fontWeight: "700", fontSize: "13px", color: "#888" },
+    summaryValue: { fontFamily: "'Oswald', sans-serif", fontSize: "15px", fontWeight: "700", color: "#1A1A1A" },
+    divider: { borderTop: "2px dashed #1A1A1A", margin: "4px 0" },
+    totalLabel: { fontFamily: "'Oswald', sans-serif", fontSize: "20px", fontWeight: "900", color: "#1A1A1A" },
+    totalValue: { fontFamily: "'Oswald', sans-serif", fontSize: "28px", fontWeight: "900", color: "#1A1A1A" },
+    recapBox: {
+        display: "flex",
+        alignItems: "flex-start",
+        gap: "12px",
+        backgroundColor: "#fffdf0",
+        border: "2px solid #1A1A1A",
+        padding: "14px 16px",
+        marginBottom: "24px",
+    },
+    recapIcon: { fontSize: "22px", flexShrink: 0 },
+    recapType: {
+        fontFamily: "'Oswald', sans-serif",
+        fontWeight: "700",
+        fontSize: "15px",
+        color: "#1A1A1A",
+        margin: "0 0 4px",
+        textTransform: "uppercase",
+        letterSpacing: "0.5px",
+    },
+    recapAddr: {
+        fontFamily: "'Public Sans', sans-serif",
+        fontSize: "12px",
+        color: "#666",
+        margin: 0,
+        lineHeight: "1.4",
+    },
+    confirmBtn: {
         width: "100%",
-        backgroundColor: "transparent",
-        color: "#B08050",
+        backgroundColor: "#FFC72C",
+        border: "3px solid #1A1A1A",
+        boxShadow: "4px 4px 0 #1A1A1A",
+        padding: "18px",
+        fontFamily: "'Oswald', sans-serif",
+        fontWeight: "900",
+        fontSize: "20px",
+        letterSpacing: "1px",
+        color: "#1A1A1A",
+        marginBottom: "12px",
+        transition: "transform 0.1s, box-shadow 0.1s",
+    },
+    cancelBtn: {
+        width: "100%",
+        background: "none",
         border: "none",
-        padding: "8px",
-        fontFamily: "'Nunito', sans-serif",
+        fontFamily: "'Public Sans', sans-serif",
         fontWeight: "700",
         fontSize: "12px",
+        color: "#aaa",
         cursor: "pointer",
         textDecoration: "underline",
+        padding: "8px",
     },
 };
 

@@ -1,13 +1,22 @@
 import { db } from "./firebase";
 import {
     collection, getDocs, addDoc, updateDoc,
-    deleteDoc, doc, serverTimestamp
+    deleteDoc, doc, serverTimestamp, onSnapshot, query, orderBy
 } from "firebase/firestore";
 
-// READ
+// READ (one-time)
 export const getProducts = async () => {
     const snapshot = await getDocs(collection(db, "products"));
     return snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+};
+
+// REAL-TIME LISTENER
+export const subscribeToProducts = (callback) => {
+    const q = query(collection(db, "products"), orderBy("createdAt", "asc"));
+    return onSnapshot(q, (snapshot) => {
+        const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+        callback(data);
+    });
 };
 
 // CREATE

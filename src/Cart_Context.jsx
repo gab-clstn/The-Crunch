@@ -8,8 +8,8 @@ export const CartProvider = ({ children }) => {
     const addToCart = (product) => {
         setCartItems((prev) => {
             const safePrev = Array.isArray(prev) ? prev : [];
-            const existingItem = safePrev.find((item) => item.id === product.id);
-            if (existingItem) {
+            const existing = safePrev.find((item) => item.id === product.id);
+            if (existing) {
                 return safePrev.map((item) =>
                     item.id === product.id ? { ...item, qty: item.qty + 1 } : item
                 );
@@ -20,7 +20,6 @@ export const CartProvider = ({ children }) => {
 
     const updateQty = (id, newQty) => {
         if (newQty <= 0) {
-            // Remove item if qty hits 0
             setCartItems(prev => prev.filter(item => item.id !== id));
         } else {
             setCartItems(prev => prev.map(item =>
@@ -29,10 +28,15 @@ export const CartProvider = ({ children }) => {
         }
     };
 
+    // ← This was missing, Order Panel's ✕ button needs it
+    const removeFromCart = (id) => {
+        setCartItems(prev => prev.filter(item => item.id !== id));
+    };
+
     const clearCart = () => setCartItems([]);
 
     return (
-        <CartContext.Provider value={{ cartItems, addToCart, updateQty, clearCart }}>
+        <CartContext.Provider value={{ cartItems, addToCart, updateQty, removeFromCart, clearCart }}>
             {children}
         </CartContext.Provider>
     );
