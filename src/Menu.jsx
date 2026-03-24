@@ -5,7 +5,7 @@ import { useAuth } from "./Auth_Context";
 import { imageMap } from "./assets/imageMap";
 import { useNavigate } from "react-router-dom";
 
-const SECTION_ORDER = ["Flavs", "Chicken", "Meals", "Sides", "Drinks"];
+const SECTION_ORDER = ["Rice Meals", "Shring", "Appetizers", "Sides", "Drinks"];
 
 const FLAVORS = [
     { label: "Classic", icon: "🤍", color: "#f5e6c8", light: false },

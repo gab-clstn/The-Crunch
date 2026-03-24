@@ -31,7 +31,7 @@ const Cart = () => {
         setIsPlacing(true);
 
         try {
-            await placeOrder(currentUser.uid, {
+            const docRef = await placeOrder(currentUser.uid, {
                 items: cartItems.map(i => ({
                     id: i.id,
                     name: i.name,
@@ -48,7 +48,14 @@ const Cart = () => {
             });
 
             clearCart();
-            navigate("/", { state: { orderSuccess: true } });
+            navigate("/order-success", {
+                state: {
+                    orderId: docRef.id,
+                    total,
+                    orderType,
+                    itemCount: cartItems.reduce((s, i) => s + i.qty, 0),
+                }
+            });
         } catch (err) {
             console.error("Order failed:", err);
             alert(`Order failed: ${err.message || "Please try again."}`);

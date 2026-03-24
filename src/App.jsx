@@ -9,6 +9,7 @@ import MyOrders from "./MyOrders";
 import Auth from "./Auth";
 import Cart from "./Cart";
 import AdminPanel from "./Admin_Panel";
+import OrderSuccess from "./OrderSuccess";
 
 function App() {
   return (
@@ -24,6 +25,7 @@ function App() {
               <Route path="/auth" element={<Auth />} />
               <Route path="/cart" element={<Cart />} />
               <Route path="/admin" element={<AdminPanel />} />
+              <Route path="/order-success" element={<OrderSuccess />} />
             </Routes>
           </div>
         </Router>
