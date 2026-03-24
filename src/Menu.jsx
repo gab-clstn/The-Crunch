@@ -7,6 +7,31 @@ import { useNavigate } from "react-router-dom";
 
 const SECTION_ORDER = ["Flavs", "Chicken", "Meals", "Sides", "Drinks"];
 
+const FLAVORS = [
+    { label: "Classic", icon: "🤍", color: "#f5e6c8", light: false },
+    { label: "Honey Garlic", icon: "⭐", color: "#f7ddaa", light: false },
+    { label: "Teriyaki", icon: "👍", color: "#3b2801", light: true },
+    { label: "Texas BBQ", icon: "🍴", color: "#1A1A1A", light: true },
+    { label: "Garlic Parmesan", icon: "🧄", color: "#e8f0e0", light: false },
+    { label: "K-Style", icon: "🌶️", color: "#e8504a", light: true },
+    { label: "Spicy K-Style", icon: "🌶️", color: "#c0392b", light: true },
+];
+
+/**
+ * Returns true if this product needs a flavor selection.
+ * Rules:
+ *  - category === "Meals"
+ *  - category === "Sharing"
+ *  - category === "Sides" AND name contains "Bucket" (case-insensitive)
+ */
+const needsFlavor = (product) => {
+    const cat = product.category || "";
+    const name = product.name || "";
+    if (cat === "Rice Meals" || cat === "For Sharing") return true;
+    if (cat === "Sides" && name.toLowerCase().includes("bucket")) return true;
+    return false;
+};
+
 /* ─── inline ProductCard ─── */
 const ProductCard = ({ product, selectedId, setSelectedId, isLoggedIn }) => {
     const { name, price, description, imageUrl, available } = product;
@@ -15,16 +40,29 @@ const ProductCard = ({ product, selectedId, setSelectedId, isLoggedIn }) => {
     const [qty, setQty] = useState(0);
     const [added, setAdded] = useState(false);
     const [hovered, setHovered] = useState(false);
+    const [selectedFlavor, setSelectedFlavor] = useState(null);
+    const [flavorError, setFlavorError] = useState(false);
 
     const selected = selectedId === product.id;
+    const requiresFlavor = needsFlavor(product);
+
     const imageSrc = imageUrl || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='200'%3E%3Crect width='300' height='200' fill='%23f0f0f0'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='14' fill='%23aaa'%3ENo Image%3C/text%3E%3C/svg%3E";
 
     const handleAdd = () => {
         if (qty === 0) return;
-        for (let i = 0; i < qty; i++) addToCart(product);
+        if (requiresFlavor && !selectedFlavor) {
+            setFlavorError(true);
+            setTimeout(() => setFlavorError(false), 1800);
+            return;
+        }
+        const productWithFlavor = requiresFlavor
+            ? { ...product, flavor: selectedFlavor, name: `${name} (${selectedFlavor})` }
+            : product;
+        for (let i = 0; i < qty; i++) addToCart(productWithFlavor);
         setAdded(true);
         setTimeout(() => setAdded(false), 1200);
         setQty(0);
+        setSelectedFlavor(null);
     };
 
     return (
@@ -53,23 +91,68 @@ const ProductCard = ({ product, selectedId, setSelectedId, isLoggedIn }) => {
                     onError={e => { e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='200'%3E%3Crect width='300' height='200' fill='%23f0f0f0'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='14' fill='%23aaa'%3ENo Image%3C/text%3E%3C/svg%3E"; }}
                 />
                 {!available && <div style={c.soldBanner}>SOLD OUT</div>}
+                {requiresFlavor && available && (
+                    <div style={c.flavorTag}>🍗 CHOOSE FLAVOR</div>
+                )}
             </div>
 
             <div style={c.cardBody}>
                 <p style={c.cardName}>{name}</p>
                 <p style={c.cardDesc}>{description}</p>
 
+                {/* ── Flavor Picker ── */}
+                {isLoggedIn && available && requiresFlavor && (
+                    <div style={c.flavorSection} onClick={e => e.stopPropagation()}>
+                        <p style={{
+                            ...c.flavorTitle,
+                            color: flavorError ? "#e74c3c" : "#888",
+                        }}>
+                            {flavorError ? "⚠️ Pick a flavor first!" : "SELECT FLAVOR"}
+                        </p>
+                        <div style={c.flavorGrid}>
+                            {FLAVORS.map(f => {
+                                const isSelected = selectedFlavor === f.label;
+                                return (
+                                    <button
+                                        key={f.label}
+                                        style={{
+                                            ...c.flavorBtn,
+                                            backgroundColor: isSelected ? f.color : "#f5f5f5",
+                                            color: isSelected ? (f.light ? "#fff" : "#1A1A1A") : "#555",
+                                            border: isSelected
+                                                ? `2px solid ${f.light ? "rgba(255,255,255,0.4)" : "#1A1A1A"}`
+                                                : "2px solid #e0e0e0",
+                                            boxShadow: isSelected ? "2px 2px 0 rgba(0,0,0,0.15)" : "none",
+                                            transform: isSelected ? "scale(1.04)" : "scale(1)",
+                                            fontWeight: isSelected ? "900" : "700",
+                                        }}
+                                        onClick={() => {
+                                            setSelectedFlavor(isSelected ? null : f.label);
+                                            setFlavorError(false);
+                                        }}
+                                    >
+                                        <span style={{ fontSize: "11px" }}>{f.icon}</span>
+                                        {f.label}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+                )}
+
                 <div style={c.cardFooter}>
                     <span style={c.cardPrice}>₱{price}</span>
 
-                    {/* Sold out — always show */}
                     {!available && <span style={c.soldTag}>SOLD OUT</span>}
 
-                    {/* Logged in — show cart controls */}
                     {isLoggedIn && available && (
                         qty === 0 ? (
                             <button
-                                style={c.addToCartBtn}
+                                style={{
+                                    ...c.addToCartBtn,
+                                    borderColor: (requiresFlavor && !selectedFlavor) ? "#ccc" : "#27ae60",
+                                    color: (requiresFlavor && !selectedFlavor) ? "#bbb" : "#27ae60",
+                                }}
                                 onClick={e => { e.stopPropagation(); setQty(1); }}
                             >
                                 {added ? "✓ Added" : "Add to Cart"}
@@ -82,7 +165,20 @@ const ProductCard = ({ product, selectedId, setSelectedId, isLoggedIn }) => {
                                     <button style={c.qtyBtn} onClick={() => setQty(q => q + 1)}>+</button>
                                 </div>
                                 <button
-                                    style={{ ...c.addBtn, backgroundColor: added ? "#27ae60" : "#fff", color: added ? "#fff" : "#27ae60" }}
+                                    style={{
+                                        ...c.addBtn,
+                                        backgroundColor: added
+                                            ? "#27ae60"
+                                            : (requiresFlavor && !selectedFlavor)
+                                                ? "#f0f0f0"
+                                                : "#fff",
+                                        color: added
+                                            ? "#fff"
+                                            : (requiresFlavor && !selectedFlavor)
+                                                ? "#ccc"
+                                                : "#27ae60",
+                                        borderColor: (requiresFlavor && !selectedFlavor) ? "#ccc" : "#27ae60",
+                                    }}
                                     onClick={handleAdd}
                                 >
                                     {added ? "✓" : "+ Add"}
@@ -90,9 +186,17 @@ const ProductCard = ({ product, selectedId, setSelectedId, isLoggedIn }) => {
                             </div>
                         )
                     )}
-
-
                 </div>
+
+                {/* Selected flavor confirmation chip */}
+                {isLoggedIn && available && requiresFlavor && selectedFlavor && (
+                    <div style={c.selectedFlavorChip} onClick={e => e.stopPropagation()}>
+                        <span style={{ fontFamily: "'Public Sans', sans-serif", fontWeight: "700", fontSize: "11px" }}>
+                            {FLAVORS.find(f => f.label === selectedFlavor)?.icon} {selectedFlavor}
+                        </span>
+                        <button style={c.chipClear} onClick={() => setSelectedFlavor(null)}>✕</button>
+                    </div>
+                )}
             </div>
         </div>
     );
@@ -240,7 +344,7 @@ const OrderPanel = () => {
     );
 };
 
-/* ─── Guest Banner (replaces Order Panel for guests) ─── */
+/* ─── Guest Banner ─── */
 const GuestBanner = () => {
     const navigate = useNavigate();
     return (
@@ -312,15 +416,7 @@ const Menu = () => {
                     <div style={m.flavBar}>
                         <span style={m.flavLabel}>SIGNATURE FLAVORS</span>
                         <div style={m.flavList}>
-                            {[
-                                { label: "CLASSIC", icon: "🤍", color: "#f5e6c8" },
-                                { label: "HONEY GARLIC", icon: "⭐", color: "#f7ddaa" },
-                                { label: "TERIYAKI", icon: "👍", color: "#3b2801", light: true },
-                                { label: "TEXAS BBQ", icon: "🍴", color: "#1A1A1A", light: true },
-                                { label: "GARLIC PARMESAN", icon: "🧄", color: "#e8f0e0" },
-                                { label: "K-STYLE", icon: "🌶️", color: "#e8504a", light: true },
-                                { label: "SPICY K-STYLE", icon: "🌶️", color: "#c0392b", light: true },
-                            ].map(({ label, icon, color, light }) => (
+                            {FLAVORS.map(({ label, icon, color, light }) => (
                                 <span key={label} style={{
                                     ...m.flavBadge,
                                     backgroundColor: color,
@@ -392,7 +488,6 @@ const Menu = () => {
                     </div>
                 </div>
 
-                {/* Right panel: Order Summary for logged-in, Guest Banner for guests */}
                 {isLoggedIn ? <OrderPanel /> : <GuestBanner />}
             </div>
         </div>
@@ -457,6 +552,13 @@ const c = {
         backgroundColor: "rgba(0,0,0,0.45)", color: "#fff",
         fontFamily: "'Oswald', sans-serif", fontSize: "18px", fontWeight: "900", letterSpacing: "2px",
     },
+    flavorTag: {
+        position: "absolute", top: "10px", right: "10px",
+        backgroundColor: "#FFC72C", color: "#1A1A1A",
+        fontFamily: "'Public Sans', sans-serif", fontWeight: "900", fontSize: "9px",
+        letterSpacing: "0.8px", padding: "3px 8px", border: "1.5px solid #1A1A1A",
+        borderRadius: "4px", boxShadow: "1px 1px 0 rgba(0,0,0,0.15)",
+    },
     cardBody: { padding: "14px 16px 16px", display: "flex", flexDirection: "column", flex: 1 },
     cardName: { fontFamily: "'Oswald', sans-serif", fontSize: "15px", fontWeight: "700", textTransform: "capitalize", margin: "0 0 4px", color: "#1A1A1A", lineHeight: "1.3" },
     cardDesc: {
@@ -464,19 +566,54 @@ const c = {
         flex: 1, lineHeight: "1.4", display: "-webkit-box",
         WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden",
     },
+
+    /* Flavor picker */
+    flavorSection: {
+        marginBottom: "10px",
+        padding: "10px 10px 8px",
+        backgroundColor: "#fafafa",
+        border: "1.5px solid #e8e8e8",
+        borderRadius: "10px",
+    },
+    flavorTitle: {
+        fontFamily: "'Public Sans', sans-serif", fontWeight: "900", fontSize: "9px",
+        letterSpacing: "1px", margin: "0 0 7px", transition: "color 0.2s",
+    },
+    flavorGrid: {
+        display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "5px",
+    },
+    flavorBtn: {
+        display: "flex", alignItems: "center", gap: "4px",
+        padding: "5px 8px", borderRadius: "6px",
+        fontFamily: "'Public Sans', sans-serif", fontSize: "10px", letterSpacing: "0.3px",
+        cursor: "pointer", transition: "all 0.15s", textAlign: "left",
+        whiteSpace: "nowrap", overflow: "hidden",
+    },
+
+    /* Selected flavor chip below footer */
+    selectedFlavorChip: {
+        display: "inline-flex", alignItems: "center", gap: "6px",
+        marginTop: "8px", padding: "4px 10px",
+        backgroundColor: "#e8f5e9", border: "1.5px solid #27ae60",
+        borderRadius: "999px", alignSelf: "flex-start",
+    },
+    chipClear: {
+        background: "none", border: "none", cursor: "pointer",
+        fontFamily: "'Public Sans', sans-serif", fontWeight: "900",
+        fontSize: "10px", color: "#27ae60", padding: 0, lineHeight: 1,
+    },
+
     cardFooter: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px", marginTop: "auto" },
     cardPrice: { fontFamily: "'Oswald', sans-serif", fontSize: "18px", fontWeight: "900", color: "#27ae60" },
     addToCartBtn: {
         backgroundColor: "#fff", border: "1.5px solid #27ae60", color: "#27ae60",
         borderRadius: "8px", padding: "7px 14px",
         fontFamily: "'Public Sans', sans-serif", fontWeight: "900", fontSize: "12px",
-        cursor: "pointer", letterSpacing: "0.3px", transition: "background 0.15s",
+        cursor: "pointer", letterSpacing: "0.3px", transition: "all 0.15s",
     },
-    loginPromptBtn: {
-        backgroundColor: "#1A1A1A", border: "1.5px solid #1A1A1A", color: "#FFC72C",
-        borderRadius: "8px", padding: "7px 14px",
-        fontFamily: "'Public Sans', sans-serif", fontWeight: "900", fontSize: "12px",
-        cursor: "pointer", letterSpacing: "0.3px", whiteSpace: "nowrap",
+    soldTag: {
+        fontFamily: "'Public Sans', sans-serif", fontSize: "11px", fontWeight: "900",
+        color: "#e74c3c", letterSpacing: "0.5px", border: "1.5px solid #e74c3c", borderRadius: "6px", padding: "4px 10px",
     },
     qtyRow: { display: "flex", alignItems: "center", gap: "6px" },
     qtyBox: {
@@ -493,11 +630,7 @@ const c = {
     addBtn: {
         border: "1.5px solid #27ae60", borderRadius: "8px", padding: "6px 10px",
         fontFamily: "'Public Sans', sans-serif", fontWeight: "900", fontSize: "11px",
-        cursor: "pointer", transition: "background 0.15s", whiteSpace: "nowrap",
-    },
-    soldTag: {
-        fontFamily: "'Public Sans', sans-serif", fontSize: "11px", fontWeight: "900",
-        color: "#e74c3c", letterSpacing: "0.5px", border: "1.5px solid #e74c3c", borderRadius: "6px", padding: "4px 10px",
+        cursor: "pointer", transition: "all 0.15s", whiteSpace: "nowrap",
     },
 };
 
