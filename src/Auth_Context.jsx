@@ -13,13 +13,20 @@ export const AuthProvider = ({ children }) => {
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
             if (user) {
-                // Fetch the user's Firestore doc to get name and role
-                const userDoc = await getDoc(doc(db, "users", user.uid));
-                const userData = userDoc.data();
+                try {
+                    // Fetch the user's Firestore doc to get name and role
+                    const userDoc = await getDoc(doc(db, "users", user.uid));
+                    const userData = userDoc.exists() ? userDoc.data() : {};
 
-                // Merge Firebase Auth user with Firestore data (so name is available)
-                setCurrentUser({ ...user, name: userData?.name || "" });
-                setIsAdmin(userData?.role === "admin");
+                    // Merge Firebase Auth user with Firestore data
+                    setCurrentUser({ ...user, name: userData?.name || "" });
+                    setIsAdmin(userData?.role === "admin");
+                } catch (error) {
+                    console.error("Failed to fetch user doc:", error.message);
+                    // Still set the user so the app doesn't crash — just without role/name
+                    setCurrentUser({ ...user, name: "" });
+                    setIsAdmin(false);
+                }
             } else {
                 setCurrentUser(null);
                 setIsAdmin(false);

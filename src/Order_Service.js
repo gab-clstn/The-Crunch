@@ -20,8 +20,8 @@ export const placeOrder = async (userId, orderData) => {
     }
 };
 
-// Real-time listener for a user's orders — fixed: now accepts onError as 3rd arg
-export const subscribeToUserOrders = (userId, callback, onError) => {
+// Real-time listener for a user's orders
+export const subscribeToUserOrders = (userId, callback) => {
     const q = query(
         collection(db, "orders"),
         where("userId", "==", userId),
@@ -34,8 +34,9 @@ export const subscribeToUserOrders = (userId, callback, onError) => {
             callback(orders);
         },
         (error) => {
+            // This will log the Firebase console URL to create the required composite index.
+            // Open that URL to create the index — it only takes one click.
             console.error("subscribeToUserOrders error:", error);
-            if (onError) onError(error);
         }
     );
 };
