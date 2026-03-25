@@ -12,18 +12,25 @@ const Cart = () => {
     const { currentUser } = useAuth();
     const [isPlacing, setIsPlacing] = useState(false);
 
+    const [customerNameInput, setCustomerNameInput] = useState(""); // ✅ FIXED
+    const [paymentMethod, setPaymentMethod] = useState("Cash");
+
     const orderType = state?.orderType || "Dine In";
     const deliveryAddress = state?.deliveryAddress || "";
 
     const subtotal = cartItems.reduce((s, i) => s + i.price * i.qty, 0);
-    const tax = subtotal * 0.12;
     const deliveryFee = orderType === "Delivery" ? 50 : 0;
-    const total = subtotal + tax + deliveryFee;
+    const total = subtotal + deliveryFee;
 
     const handleConfirm = async () => {
         if (!currentUser) {
             alert("You must be logged in to place an order.");
             navigate("/auth");
+            return;
+        }
+
+        if (!customerNameInput.trim()) {
+            alert("Please enter your name.");
             return;
         }
 
@@ -42,9 +49,12 @@ const Cart = () => {
                 orderType,
                 deliveryAddress,
                 subtotal,
-                tax,
                 deliveryFee,
                 total,
+                paymentMethod,
+
+                // ✅ FIXED: always use input
+                customerName: customerNameInput.trim(),
             });
 
             clearCart();
@@ -68,7 +78,6 @@ const Cart = () => {
 
     return (
         <div style={s.page}>
-            {/* Left — Order Review */}
             <div style={s.left}>
                 <button style={s.backBtn} onClick={() => navigate("/menu")}>
                     ← BACK TO MENU
@@ -119,20 +128,35 @@ const Cart = () => {
                 )}
             </div>
 
-            {/* Right — Summary & Confirm */}
             <div style={s.right}>
                 <div style={s.summaryCard}>
                     <h2 style={s.summaryTitle}>ORDER SUMMARY</h2>
+
+                    {/* ✅ CUSTOMER NAME INPUT (FIXED POSITION) */}
+                    <div style={{ marginBottom: "16px" }}>
+                        <p style={{ fontFamily: "'Oswald', sans-serif", fontWeight: "900" }}>
+                            CUSTOMER NAME
+                        </p>
+                        <input
+                            type="text"
+                            placeholder="Enter your name"
+                            value={customerNameInput}
+                            onChange={(e) => setCustomerNameInput(e.target.value)}
+                            style={{
+                                width: "100%",
+                                padding: "10px",
+                                border: "2px solid #1A1A1A",
+                                fontFamily: "'Public Sans', sans-serif",
+                            }}
+                        />
+                    </div>
 
                     <div style={s.summaryRows}>
                         <div style={s.summaryRow}>
                             <span style={s.summaryLabel}>Subtotal</span>
                             <span style={s.summaryValue}>₱{subtotal.toFixed(2)}</span>
                         </div>
-                        <div style={s.summaryRow}>
-                            <span style={s.summaryLabel}>Tax (12%)</span>
-                            <span style={s.summaryValue}>₱{tax.toFixed(2)}</span>
-                        </div>
+
                         {orderType === "Delivery" && (
                             <div style={s.summaryRow}>
                                 <span style={s.summaryLabel}>Delivery Fee</span>
@@ -146,20 +170,21 @@ const Cart = () => {
                         </div>
                     </div>
 
-                    <div style={s.recapBox}>
-                        <span style={s.recapIcon}>{orderTypeIcon}</span>
-                        <div>
-                            <p style={s.recapType}>{orderType}</p>
-                            {orderType === "Delivery" && deliveryAddress && (
-                                <p style={s.recapAddr}>{deliveryAddress}</p>
-                            )}
-                            {orderType === "Pick-Up" && (
-                                <p style={s.recapAddr}>Pick up at the counter when ready.</p>
-                            )}
-                            {orderType === "Dine In" && (
-                                <p style={s.recapAddr}>Your order will be served at your table.</p>
-                            )}
-                        </div>
+                    <div style={s.paymentBox}>
+                        <p style={s.paymentTitle}>PAYMENT METHOD</p>
+
+                        {["Cash", "GCash", "QRPH"].map(method => (
+                            <button
+                                key={method}
+                                style={{
+                                    ...s.paymentBtn,
+                                    ...(paymentMethod === method ? s.paymentBtnActive : {})
+                                }}
+                                onClick={() => setPaymentMethod(method)}
+                            >
+                                {method}
+                            </button>
+                        ))}
                     </div>
 
                     <button
@@ -182,6 +207,9 @@ const Cart = () => {
         </div>
     );
 };
+
+// styles unchanged...
+
 
 const s = {
     page: {
@@ -413,6 +441,30 @@ const s = {
         cursor: "pointer",
         textDecoration: "underline",
         padding: "8px",
+    },
+
+    paymentBox: {
+        marginBottom: "20px",
+        display: "flex",
+        flexDirection: "column",
+        gap: "8px",
+    },
+    paymentTitle: {
+        fontFamily: "'Oswald', sans-serif",
+        fontSize: "14px",
+        fontWeight: "900",
+        color: "#1A1A1A",
+    },
+    paymentBtn: {
+        padding: "10px",
+        border: "2px solid #1A1A1A",
+        backgroundColor: "#fff",
+        fontFamily: "'Public Sans', sans-serif",
+        fontWeight: "900",
+        cursor: "pointer",
+    },
+    paymentBtnActive: {
+        backgroundColor: "#FFC72C",
     },
 };
 
