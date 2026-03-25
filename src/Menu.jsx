@@ -5,7 +5,7 @@ import { useAuth } from "./Auth_Context";
 import { imageMap } from "./assets/imageMap";
 import { useNavigate } from "react-router-dom";
 
-const SECTION_ORDER = ["Rice Meals", "Shring", "Appetizers", "Sides", "Drinks"];
+const SECTION_ORDER = ["Rice Meals", "Sharing", "Appetizers", "Sides", "Drinks"];
 
 const FLAVORS = [
     { label: "Classic", icon: "🤍", color: "#f5e6c8", light: false },
@@ -48,6 +48,8 @@ const ProductCard = ({ product, selectedId, setSelectedId, isLoggedIn }) => {
 
     const imageSrc = imageUrl || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='200'%3E%3Crect width='300' height='200' fill='%23f0f0f0'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='14' fill='%23aaa'%3ENo Image%3C/text%3E%3C/svg%3E";
 
+    // ONLY CHANGE IS INSIDE handleAdd()
+
     const handleAdd = () => {
         if (qty === 0) return;
         if (requiresFlavor && !selectedFlavor) {
@@ -55,10 +57,19 @@ const ProductCard = ({ product, selectedId, setSelectedId, isLoggedIn }) => {
             setTimeout(() => setFlavorError(false), 1800);
             return;
         }
+
         const productWithFlavor = requiresFlavor
-            ? { ...product, flavor: selectedFlavor, name: `${name} (${selectedFlavor})` }
+            ? {
+                ...product,
+                flavor: selectedFlavor,
+                name: `${name} (${selectedFlavor})`,
+                // ✅ IMPORTANT FIX HERE
+                id: `${product.id}_${selectedFlavor}`
+            }
             : product;
+
         for (let i = 0; i < qty; i++) addToCart(productWithFlavor);
+
         setAdded(true);
         setTimeout(() => setAdded(false), 1200);
         setQty(0);
@@ -210,8 +221,7 @@ const OrderPanel = () => {
     const [deliveryAddress, setDeliveryAddress] = useState("");
 
     const subtotal = cartItems.reduce((s, i) => s + i.price * i.qty, 0);
-    const tax = subtotal * 0.12;
-    const total = subtotal + tax;
+    const total = subtotal;
 
     const handlePlaceOrder = () => {
         if (activeTab === "Delivery" && !deliveryAddress.trim()) {
@@ -223,7 +233,6 @@ const OrderPanel = () => {
                 orderType: activeTab,
                 deliveryAddress: activeTab === "Delivery" ? deliveryAddress : "",
                 subtotal,
-                tax,
                 total: activeTab === "Delivery" ? total + 50 : total,
             }
         });
@@ -311,10 +320,7 @@ const OrderPanel = () => {
                     <span style={p.totalLabel}>Sub Total</span>
                     <span style={p.totalValue}>₱{subtotal.toFixed(2)}</span>
                 </div>
-                <div style={p.totalRow}>
-                    <span style={p.totalLabel}>Tax (12%)</span>
-                    <span style={p.totalValue}>₱{tax.toFixed(2)}</span>
-                </div>
+
                 {activeTab === "Delivery" && (
                     <div style={p.totalRow}>
                         <span style={p.totalLabel}>Delivery Fee</span>

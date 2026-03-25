@@ -14,9 +14,9 @@ const emptyForm = {
 const STATUS_FLOW = ["Pending", "Preparing", "Ready", "Delivered"];
 
 const STATUS_STYLES = {
-    Pending:   { bg: "#fff8e1", color: "#f59e0b", border: "#f59e0b" },
+    Pending: { bg: "#fff8e1", color: "#f59e0b", border: "#f59e0b" },
     Preparing: { bg: "#e0f2fe", color: "#0284c7", border: "#0284c7" },
-    Ready:     { bg: "#dcfce7", color: "#16a34a", border: "#16a34a" },
+    Ready: { bg: "#dcfce7", color: "#16a34a", border: "#16a34a" },
     Delivered: { bg: "#f3f4f6", color: "#6b7280", border: "#9ca3af" },
 };
 
@@ -154,7 +154,6 @@ const OrdersTab = () => {
                                         </div>
                                         <div style={o.breakdown}>
                                             <div style={o.bRow}><span style={o.bLabel}>Subtotal</span><span style={o.bVal}>₱{order.subtotal?.toFixed(2)}</span></div>
-                                            <div style={o.bRow}><span style={o.bLabel}>Tax (12%)</span><span style={o.bVal}>₱{order.tax?.toFixed(2)}</span></div>
                                             {order.deliveryFee > 0 && <div style={o.bRow}><span style={o.bLabel}>Delivery Fee</span><span style={o.bVal}>₱{order.deliveryFee?.toFixed(2)}</span></div>}
                                             {order.deliveryAddress && (
                                                 <div style={{ ...o.bRow, marginTop: 6 }}>
@@ -169,7 +168,19 @@ const OrdersTab = () => {
                                             </div>
                                         </div>
                                         <div style={{ marginTop: 10 }}>
-                                            <p style={o.userIdLabel}>User ID: <span style={o.userIdVal}>{order.userId}</span></p>
+                                            <p style={{
+                                                fontFamily: "'Oswald', sans-serif",
+                                                fontSize: "16px",
+                                                fontWeight: "900",
+                                                margin: "0 0 4px",
+                                                color: "#1A1A1A"
+                                            }}>
+                                                {order.customerName || "GUEST"}
+                                            </p>
+
+                                            <p style={o.userIdLabel}>
+                                                User ID: <span style={o.userIdVal}>{order.userId}</span>
+                                            </p>
                                         </div>
                                     </div>
                                 )}

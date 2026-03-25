@@ -175,8 +175,6 @@ const MyOrders = () => {
                                                     <span style={o.breakdownValue}>₱{order.subtotal?.toFixed(2)}</span>
                                                 </div>
                                                 <div style={o.breakdownRow}>
-                                                    <span style={o.breakdownLabel}>Tax (12%)</span>
-                                                    <span style={o.breakdownValue}>₱{order.tax?.toFixed(2)}</span>
                                                 </div>
                                                 {order.deliveryFee > 0 && (
                                                     <div style={o.breakdownRow}>
