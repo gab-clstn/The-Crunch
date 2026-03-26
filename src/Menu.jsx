@@ -17,13 +17,6 @@ const FLAVORS = [
     { label: "Spicy K-Style", icon: "🌶️", color: "#c0392b", light: true },
 ];
 
-/**
- * Returns true if this product needs a flavor selection.
- * Rules:
- *  - category === "Meals"
- *  - category === "Sharing"
- *  - category === "Sides" AND name contains "Bucket" (case-insensitive)
- */
 const needsFlavor = (product) => {
     const cat = product.category || "";
     const name = product.name || "";
@@ -32,7 +25,7 @@ const needsFlavor = (product) => {
     return false;
 };
 
-/* ─── inline ProductCard ─── */
+/* ─── ProductCard ─── */
 const ProductCard = ({ product, selectedId, setSelectedId, isLoggedIn }) => {
     const { name, price, description, imageUrl, available } = product;
     const { addToCart } = useCart();
@@ -48,8 +41,6 @@ const ProductCard = ({ product, selectedId, setSelectedId, isLoggedIn }) => {
 
     const imageSrc = imageUrl || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='200'%3E%3Crect width='300' height='200' fill='%23f0f0f0'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='14' fill='%23aaa'%3ENo Image%3C/text%3E%3C/svg%3E";
 
-    // ONLY CHANGE IS INSIDE handleAdd()
-
     const handleAdd = () => {
         if (qty === 0) return;
         if (requiresFlavor && !selectedFlavor) {
@@ -57,19 +48,10 @@ const ProductCard = ({ product, selectedId, setSelectedId, isLoggedIn }) => {
             setTimeout(() => setFlavorError(false), 1800);
             return;
         }
-
         const productWithFlavor = requiresFlavor
-            ? {
-                ...product,
-                flavor: selectedFlavor,
-                name: `${name} (${selectedFlavor})`,
-                // ✅ IMPORTANT FIX HERE
-                id: `${product.id}_${selectedFlavor}`
-            }
+            ? { ...product, flavor: selectedFlavor, name: `${name} (${selectedFlavor})`, id: `${product.id}_${selectedFlavor}` }
             : product;
-
         for (let i = 0; i < qty; i++) addToCart(productWithFlavor);
-
         setAdded(true);
         setTimeout(() => setAdded(false), 1200);
         setQty(0);
@@ -83,11 +65,7 @@ const ProductCard = ({ product, selectedId, setSelectedId, isLoggedIn }) => {
                 opacity: available ? 1 : 0.6,
                 outline: selected ? "2.5px solid #27ae60" : "2.5px solid transparent",
                 transform: selected ? "scale(1.01)" : hovered ? "scale(1.005)" : "scale(1)",
-                boxShadow: selected
-                    ? "0 4px 20px rgba(39,174,96,0.2)"
-                    : hovered
-                        ? "0 6px 20px rgba(0,0,0,0.13)"
-                        : "0 2px 12px rgba(0,0,0,0.09)",
+                boxShadow: selected ? "0 4px 20px rgba(39,174,96,0.2)" : hovered ? "0 6px 20px rgba(0,0,0,0.13)" : "0 2px 12px rgba(0,0,0,0.09)",
                 cursor: "pointer",
             }}
             onClick={() => setSelectedId(selected ? null : product.id)}
@@ -95,53 +73,35 @@ const ProductCard = ({ product, selectedId, setSelectedId, isLoggedIn }) => {
             onMouseLeave={() => setHovered(false)}
         >
             <div style={c.imgWrap}>
-                <img
-                    src={imageSrc}
-                    alt={name}
-                    style={c.img}
-                    onError={e => { e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='200'%3E%3Crect width='300' height='200' fill='%23f0f0f0'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='14' fill='%23aaa'%3ENo Image%3C/text%3E%3C/svg%3E"; }}
-                />
+                <img src={imageSrc} alt={name} style={c.img}
+                    onError={e => { e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='200'%3E%3Crect width='300' height='200' fill='%23f0f0f0'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='14' fill='%23aaa'%3ENo Image%3C/text%3E%3C/svg%3E"; }} />
                 {!available && <div style={c.soldBanner}>SOLD OUT</div>}
-                {requiresFlavor && available && (
-                    <div style={c.flavorTag}>🍗 CHOOSE FLAVOR</div>
-                )}
+                {requiresFlavor && available && <div style={c.flavorTag}>🍗 CHOOSE FLAVOR</div>}
             </div>
 
             <div style={c.cardBody}>
                 <p style={c.cardName}>{name}</p>
                 <p style={c.cardDesc}>{description}</p>
 
-                {/* ── Flavor Picker ── */}
                 {isLoggedIn && available && requiresFlavor && (
                     <div style={c.flavorSection} onClick={e => e.stopPropagation()}>
-                        <p style={{
-                            ...c.flavorTitle,
-                            color: flavorError ? "#e74c3c" : "#888",
-                        }}>
+                        <p style={{ ...c.flavorTitle, color: flavorError ? "#e74c3c" : "#888" }}>
                             {flavorError ? "⚠️ Pick a flavor first!" : "SELECT FLAVOR"}
                         </p>
                         <div style={c.flavorGrid}>
                             {FLAVORS.map(f => {
                                 const isSelected = selectedFlavor === f.label;
                                 return (
-                                    <button
-                                        key={f.label}
-                                        style={{
-                                            ...c.flavorBtn,
-                                            backgroundColor: isSelected ? f.color : "#f5f5f5",
-                                            color: isSelected ? (f.light ? "#fff" : "#1A1A1A") : "#555",
-                                            border: isSelected
-                                                ? `2px solid ${f.light ? "rgba(255,255,255,0.4)" : "#1A1A1A"}`
-                                                : "2px solid #e0e0e0",
-                                            boxShadow: isSelected ? "2px 2px 0 rgba(0,0,0,0.15)" : "none",
-                                            transform: isSelected ? "scale(1.04)" : "scale(1)",
-                                            fontWeight: isSelected ? "900" : "700",
-                                        }}
-                                        onClick={() => {
-                                            setSelectedFlavor(isSelected ? null : f.label);
-                                            setFlavorError(false);
-                                        }}
-                                    >
+                                    <button key={f.label} style={{
+                                        ...c.flavorBtn,
+                                        backgroundColor: isSelected ? f.color : "#f5f5f5",
+                                        color: isSelected ? (f.light ? "#fff" : "#1A1A1A") : "#555",
+                                        border: isSelected ? `2px solid ${f.light ? "rgba(255,255,255,0.4)" : "#1A1A1A"}` : "2px solid #e0e0e0",
+                                        boxShadow: isSelected ? "2px 2px 0 rgba(0,0,0,0.15)" : "none",
+                                        transform: isSelected ? "scale(1.04)" : "scale(1)",
+                                        fontWeight: isSelected ? "900" : "700",
+                                    }}
+                                        onClick={() => { setSelectedFlavor(isSelected ? null : f.label); setFlavorError(false); }}>
                                         <span style={{ fontSize: "11px" }}>{f.icon}</span>
                                         {f.label}
                                     </button>
@@ -153,19 +113,14 @@ const ProductCard = ({ product, selectedId, setSelectedId, isLoggedIn }) => {
 
                 <div style={c.cardFooter}>
                     <span style={c.cardPrice}>₱{price}</span>
-
                     {!available && <span style={c.soldTag}>SOLD OUT</span>}
-
                     {isLoggedIn && available && (
                         qty === 0 ? (
-                            <button
-                                style={{
-                                    ...c.addToCartBtn,
-                                    borderColor: (requiresFlavor && !selectedFlavor) ? "#ccc" : "#27ae60",
-                                    color: (requiresFlavor && !selectedFlavor) ? "#bbb" : "#27ae60",
-                                }}
-                                onClick={e => { e.stopPropagation(); setQty(1); }}
-                            >
+                            <button style={{
+                                ...c.addToCartBtn,
+                                borderColor: (requiresFlavor && !selectedFlavor) ? "#ccc" : "#27ae60",
+                                color: (requiresFlavor && !selectedFlavor) ? "#bbb" : "#27ae60",
+                            }} onClick={e => { e.stopPropagation(); setQty(1); }}>
                                 {added ? "✓ Added" : "Add to Cart"}
                             </button>
                         ) : (
@@ -175,23 +130,12 @@ const ProductCard = ({ product, selectedId, setSelectedId, isLoggedIn }) => {
                                     <span style={c.qtyNum}>{qty}</span>
                                     <button style={c.qtyBtn} onClick={() => setQty(q => q + 1)}>+</button>
                                 </div>
-                                <button
-                                    style={{
-                                        ...c.addBtn,
-                                        backgroundColor: added
-                                            ? "#27ae60"
-                                            : (requiresFlavor && !selectedFlavor)
-                                                ? "#f0f0f0"
-                                                : "#fff",
-                                        color: added
-                                            ? "#fff"
-                                            : (requiresFlavor && !selectedFlavor)
-                                                ? "#ccc"
-                                                : "#27ae60",
-                                        borderColor: (requiresFlavor && !selectedFlavor) ? "#ccc" : "#27ae60",
-                                    }}
-                                    onClick={handleAdd}
-                                >
+                                <button style={{
+                                    ...c.addBtn,
+                                    backgroundColor: added ? "#27ae60" : (requiresFlavor && !selectedFlavor) ? "#f0f0f0" : "#fff",
+                                    color: added ? "#fff" : (requiresFlavor && !selectedFlavor) ? "#ccc" : "#27ae60",
+                                    borderColor: (requiresFlavor && !selectedFlavor) ? "#ccc" : "#27ae60",
+                                }} onClick={handleAdd}>
                                     {added ? "✓" : "+ Add"}
                                 </button>
                             </div>
@@ -199,7 +143,6 @@ const ProductCard = ({ product, selectedId, setSelectedId, isLoggedIn }) => {
                     )}
                 </div>
 
-                {/* Selected flavor confirmation chip */}
                 {isLoggedIn && available && requiresFlavor && selectedFlavor && (
                     <div style={c.selectedFlavorChip} onClick={e => e.stopPropagation()}>
                         <span style={{ fontFamily: "'Public Sans', sans-serif", fontWeight: "700", fontSize: "11px" }}>
@@ -213,8 +156,8 @@ const ProductCard = ({ product, selectedId, setSelectedId, isLoggedIn }) => {
     );
 };
 
-/* ─── Order Panel (logged-in only) ─── */
-const OrderPanel = () => {
+/* ─── Order Panel content (shared between sidebar & drawer) ─── */
+const OrderPanelContent = ({ onClose }) => {
     const { cartItems, removeFromCart } = useCart();
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState("Dine In");
@@ -222,6 +165,7 @@ const OrderPanel = () => {
 
     const subtotal = cartItems.reduce((s, i) => s + i.price * i.qty, 0);
     const total = subtotal;
+    const itemCount = cartItems.reduce((s, i) => s + i.qty, 0);
 
     const handlePlaceOrder = () => {
         if (activeTab === "Delivery" && !deliveryAddress.trim()) {
@@ -239,19 +183,21 @@ const OrderPanel = () => {
     };
 
     return (
-        <aside style={p.panel}>
+        <>
             <div style={p.panelHead}>
                 <span style={p.panelTitle}>ORDER SUMMARY</span>
-                <span style={p.itemCount}>{cartItems.reduce((s, i) => s + i.qty, 0)} items</span>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <span style={p.itemCount}>{itemCount} items</span>
+                    {/* Close button only shown in drawer (onClose provided) */}
+                    {onClose && (
+                        <button onClick={onClose} style={p.drawerCloseBtn}>✕</button>
+                    )}
+                </div>
             </div>
 
             <div style={p.tabs}>
                 {["Dine In", "Pick-Up", "Delivery"].map((t) => (
-                    <button
-                        key={t}
-                        style={{ ...p.tab, ...(activeTab === t ? p.tabActive : {}) }}
-                        onClick={() => setActiveTab(t)}
-                    >
+                    <button key={t} style={{ ...p.tab, ...(activeTab === t ? p.tabActive : {}) }} onClick={() => setActiveTab(t)}>
                         {t}
                     </button>
                 ))}
@@ -272,13 +218,8 @@ const OrderPanel = () => {
             {activeTab === "Delivery" && (
                 <div style={p.deliveryBox}>
                     <label style={p.deliveryLabel}>DELIVERY ADDRESS</label>
-                    <input
-                        style={p.deliveryInput}
-                        type="text"
-                        placeholder="Enter your full address..."
-                        value={deliveryAddress}
-                        onChange={(e) => setDeliveryAddress(e.target.value)}
-                    />
+                    <input style={p.deliveryInput} type="text" placeholder="Enter your full address..."
+                        value={deliveryAddress} onChange={(e) => setDeliveryAddress(e.target.value)} />
                 </div>
             )}
 
@@ -293,13 +234,8 @@ const OrderPanel = () => {
                     cartItems.map((item) => (
                         <div key={item.id} style={p.item}>
                             <img
-                                src={
-                                    (typeof imageMap !== "undefined" && imageMap[item.name])
-                                        ? imageMap[item.name]
-                                        : item.imageUrl || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='200'%3E%3Crect width='300' height='200' fill='%23f0f0f0'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='14' fill='%23aaa'%3ENo Image%3C/text%3E%3C/svg%3E"
-                                }
-                                alt={item.name}
-                                style={p.itemImg}
+                                src={(typeof imageMap !== "undefined" && imageMap[item.name]) ? imageMap[item.name] : item.imageUrl || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='200'%3E%3Crect width='300' height='200' fill='%23f0f0f0'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='14' fill='%23aaa'%3ENo Image%3C/text%3E%3C/svg%3E"}
+                                alt={item.name} style={p.itemImg}
                                 onError={e => { e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='200'%3E%3Crect width='300' height='200' fill='%23f0f0f0'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='14' fill='%23aaa'%3ENo Image%3C/text%3E%3C/svg%3E"; }}
                             />
                             <div style={p.itemInfo}>
@@ -320,7 +256,6 @@ const OrderPanel = () => {
                     <span style={p.totalLabel}>Sub Total</span>
                     <span style={p.totalValue}>₱{subtotal.toFixed(2)}</span>
                 </div>
-
                 {activeTab === "Delivery" && (
                     <div style={p.totalRow}>
                         <span style={p.totalLabel}>Delivery Fee</span>
@@ -329,9 +264,7 @@ const OrderPanel = () => {
                 )}
                 <div style={{ ...p.totalRow, ...p.grandRow }}>
                     <span style={p.grandLabel}>Total Amount</span>
-                    <span style={p.grandValue}>
-                        ₱{(activeTab === "Delivery" ? total + 50 : total).toFixed(2)}
-                    </span>
+                    <span style={p.grandValue}>₱{(activeTab === "Delivery" ? total + 50 : total).toFixed(2)}</span>
                 </div>
             </div>
 
@@ -346,24 +279,75 @@ const OrderPanel = () => {
             >
                 PLACE ORDER →
             </button>
-        </aside>
+        </>
     );
 };
 
-/* ─── Guest Banner ─── */
+/* ─── Desktop sidebar wrapper ─── */
+const OrderPanel = () => (
+    <aside style={p.panel} className="order-sidebar">
+        <OrderPanelContent />
+    </aside>
+);
+
+/* ─── Mobile bottom drawer ─── */
+const MobileOrderDrawer = ({ isOpen, onClose, isLoggedIn }) => {
+    const { cartItems } = useCart();
+    const navigate = useNavigate();
+    const itemCount = cartItems.reduce((s, i) => s + i.qty, 0);
+
+    if (!isLoggedIn) {
+        return (
+            <>
+                {/* Backdrop */}
+                <div
+                    style={{ ...d.backdrop, opacity: isOpen ? 1 : 0, pointerEvents: isOpen ? "auto" : "none" }}
+                    onClick={onClose}
+                />
+                {/* Drawer */}
+                <div style={{ ...d.drawer, transform: isOpen ? "translateY(0)" : "translateY(100%)" }}>
+                    <div style={d.dragHandle} />
+                    <div style={g.inner}>
+                        <span style={g.icon}>🍗</span>
+                        <h2 style={g.title}>READY TO ORDER?</h2>
+                        <p style={g.subtitle}>Log in or create a free account to add items and place an order.</p>
+                        <button style={g.loginBtn} onClick={() => navigate("/auth")}>LOGIN / SIGN UP</button>
+                        <p style={g.hint}>It only takes a second!</p>
+                    </div>
+                    <button onClick={onClose} style={d.closeBtn}>✕ CLOSE</button>
+                </div>
+            </>
+        );
+    }
+
+    return (
+        <>
+            {/* Backdrop */}
+            <div
+                style={{ ...d.backdrop, opacity: isOpen ? 1 : 0, pointerEvents: isOpen ? "auto" : "none" }}
+                onClick={onClose}
+            />
+            {/* Drawer */}
+            <div style={{ ...d.drawer, transform: isOpen ? "translateY(0)" : "translateY(100%)" }}>
+                <div style={d.dragHandle} />
+                <div style={{ display: "flex", flexDirection: "column", flex: 1, overflowY: "hidden" }}>
+                    <OrderPanelContent onClose={onClose} />
+                </div>
+            </div>
+        </>
+    );
+};
+
+/* ─── Guest Banner (desktop sidebar only) ─── */
 const GuestBanner = () => {
     const navigate = useNavigate();
     return (
-        <aside style={g.panel}>
+        <aside style={g.panel} className="order-sidebar">
             <div style={g.inner}>
                 <span style={g.icon}>🍗</span>
                 <h2 style={g.title}>READY TO ORDER?</h2>
-                <p style={g.subtitle}>
-                    Log in or create a free account to add items to your cart and place an order.
-                </p>
-                <button style={g.loginBtn} onClick={() => navigate("/auth")}>
-                    LOGIN / SIGN UP
-                </button>
+                <p style={g.subtitle}>Log in or create a free account to add items to your cart and place an order.</p>
+                <button style={g.loginBtn} onClick={() => navigate("/auth")}>LOGIN / SIGN UP</button>
                 <p style={g.hint}>It only takes a second!</p>
             </div>
         </aside>
@@ -375,14 +359,15 @@ const Menu = () => {
     const [products, setProducts] = useState([]);
     const [activeCategory, setActiveCategory] = useState("All");
     const [selectedId, setSelectedId] = useState(null);
+    const [drawerOpen, setDrawerOpen] = useState(false);
     const { currentUser } = useAuth();
+    const { cartItems } = useCart();
 
     const isLoggedIn = !!currentUser;
+    const itemCount = cartItems.reduce((s, i) => s + i.qty, 0);
 
     useEffect(() => {
-        const unsubscribe = subscribeToProducts((data) => {
-            setProducts(data);
-        });
+        const unsubscribe = subscribeToProducts((data) => setProducts(data));
         return () => unsubscribe();
     }, []);
 
@@ -411,92 +396,122 @@ const Menu = () => {
             : { [activeCategory]: filteredProducts };
 
     return (
-        <div style={m.page}>
-            <section style={m.hero}>
-                <div style={m.innerContainer}>
-                    <h1 style={m.heroTitle}>
-                        THE CRUNCH <span style={{ color: "#fff" }}>MENU</span>
-                    </h1>
-                    <p style={m.heroSubtitle}>FRESHLY FRIED • BOLD FLAVOR • MAXIMUM CRUNCH</p>
+        <>
+            <style>{`
+                /* Desktop: show sidebar, hide FAB */
+                @media (min-width: 769px) {
+                    .order-sidebar { display: flex !important; }
+                    .mobile-cart-fab { display: none !important; }
+                }
+                /* Mobile: hide sidebar, show FAB + full-width menu */
+                @media (max-width: 768px) {
+                    .order-sidebar { display: none !important; }
+                    .mobile-cart-fab { display: flex !important; }
+                    .menu-left-pane {
+                        flex: 1 1 100% !important;
+                        width: 100% !important;
+                        /* Add bottom padding so FAB doesn't cover last item */
+                        padding-bottom: 100px !important;
+                    }
+                }
+            `}</style>
 
-                    <div style={m.flavBar}>
-                        <span style={m.flavLabel}>SIGNATURE FLAVORS</span>
-                        <div style={m.flavList}>
-                            {FLAVORS.map(({ label, icon, color, light }) => (
-                                <span key={label} style={{
-                                    ...m.flavBadge,
-                                    backgroundColor: color,
-                                    color: light ? "#fff" : "#1A1A1A",
-                                    border: `2px solid ${light ? "rgba(255,255,255,0.3)" : "#1A1A1A"}`,
-                                }}>
-                                    <span>{icon}</span> {label}
-                                </span>
+            <div style={m.page}>
+                <section style={m.hero}>
+                    <div style={m.innerContainer}>
+                        <h1 style={m.heroTitle}>
+                            THE CRUNCH <span style={{ color: "#fff" }}>MENU</span>
+                        </h1>
+                        <p style={m.heroSubtitle}>FRESHLY FRIED • BOLD FLAVOR • MAXIMUM CRUNCH</p>
+                        <div style={m.flavBar}>
+                            <span style={m.flavLabel}>SIGNATURE FLAVORS</span>
+                            <div style={m.flavList}>
+                                {FLAVORS.map(({ label, icon, color, light }) => (
+                                    <span key={label} style={{
+                                        ...m.flavBadge,
+                                        backgroundColor: color,
+                                        color: light ? "#fff" : "#1A1A1A",
+                                        border: `2px solid ${light ? "rgba(255,255,255,0.3)" : "#1A1A1A"}`,
+                                    }}>
+                                        <span>{icon}</span> {label}
+                                    </span>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <div style={m.posLayout}>
+                    {/* ── Menu items ── */}
+                    <div className="menu-left-pane" style={m.leftPane}>
+                        <div style={m.catBar}>
+                            {allCategories.map((cat) => (
+                                <button key={cat} style={{ ...m.catPill, ...(activeCategory === cat ? m.catPillActive : {}) }}
+                                    onClick={() => setActiveCategory(cat)}>
+                                    {cat}
+                                    {cat !== "All" && grouped[cat] && (
+                                        <span style={{ ...m.catCount, ...(activeCategory === cat ? m.catCountActive : {}) }}>
+                                            {grouped[cat].length}
+                                        </span>
+                                    )}
+                                </button>
+                            ))}
+                        </div>
+
+                        <div style={m.sections}>
+                            {Object.entries(displayGrouped).map(([category, items]) => (
+                                <div key={category} style={m.section}>
+                                    <div style={m.catHeader}>
+                                        <span style={m.catLine} />
+                                        <h2 style={m.catTitle}>{category}</h2>
+                                        <span style={m.catLine} />
+                                    </div>
+                                    <div style={{
+                                        ...m.grid,
+                                        gridTemplateColumns:
+                                            window.innerWidth < 640 ? "1fr" :
+                                            items.length === 1 ? "minmax(0, 300px)" :
+                                            items.length === 2 ? "repeat(2, 1fr)" :
+                                            "repeat(auto-fit, minmax(280px, 1fr))",
+                                    }}>
+                                        {items.map((product) => (
+                                            <ProductCard key={product.id} product={product}
+                                                selectedId={selectedId} setSelectedId={setSelectedId}
+                                                isLoggedIn={isLoggedIn} />
+                                        ))}
+                                    </div>
+                                </div>
                             ))}
                         </div>
                     </div>
+
+                    {/* ── Desktop sidebar ── */}
+                    {isLoggedIn ? <OrderPanel /> : <GuestBanner />}
                 </div>
-            </section>
-
-            <div style={m.posLayout}>
-                <div style={m.leftPane}>
-                    <div style={m.catBar}>
-                        {allCategories.map((cat) => (
-                            <button
-                                key={cat}
-                                style={{
-                                    ...m.catPill,
-                                    ...(activeCategory === cat ? m.catPillActive : {}),
-                                }}
-                                onClick={() => setActiveCategory(cat)}
-                            >
-                                {cat}
-                                {cat !== "All" && grouped[cat] && (
-                                    <span style={{
-                                        ...m.catCount,
-                                        ...(activeCategory === cat ? m.catCountActive : {}),
-                                    }}>
-                                        {grouped[cat].length}
-                                    </span>
-                                )}
-                            </button>
-                        ))}
-                    </div>
-
-                    <div style={m.sections}>
-                        {Object.entries(displayGrouped).map(([category, items]) => (
-                            <div key={category} style={m.section}>
-                                <div style={m.catHeader}>
-                                    <span style={m.catLine} />
-                                    <h2 style={m.catTitle}>{category}</h2>
-                                    <span style={m.catLine} />
-                                </div>
-                                <div style={{
-                                    ...m.grid,
-                                    gridTemplateColumns:
-                                        items.length === 1
-                                            ? "minmax(0, 300px)"
-                                            : items.length === 2
-                                                ? "repeat(2, 1fr)"
-                                                : "repeat(3, 1fr)",
-                                }}>
-                                    {items.map((product) => (
-                                        <ProductCard
-                                            key={product.id}
-                                            product={product}
-                                            selectedId={selectedId}
-                                            setSelectedId={setSelectedId}
-                                            isLoggedIn={isLoggedIn}
-                                        />
-                                    ))}
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-
-                {isLoggedIn ? <OrderPanel /> : <GuestBanner />}
             </div>
-        </div>
+
+            {/* ── Mobile FAB cart button ── */}
+            <button
+                className="mobile-cart-fab"
+                style={fab.btn}
+                onClick={() => setDrawerOpen(true)}
+            >
+                <span style={fab.icon}>🛒</span>
+                <span style={fab.label}>
+                    {isLoggedIn ? "VIEW ORDER" : "ORDER"}
+                </span>
+                {isLoggedIn && itemCount > 0 && (
+                    <span style={fab.badge}>{itemCount}</span>
+                )}
+            </button>
+
+            {/* ── Mobile bottom drawer ── */}
+            <MobileOrderDrawer
+                isOpen={drawerOpen}
+                onClose={() => setDrawerOpen(false)}
+                isLoggedIn={isLoggedIn}
+            />
+        </>
     );
 };
 
@@ -507,18 +522,18 @@ const Menu = () => {
 const m = {
     page: { backgroundColor: "#f8f8f8", minHeight: "100vh", width: "100%" },
     hero: {
-        backgroundColor: "#FFC72C", paddingTop: "80px", paddingBottom: "80px",
+        backgroundColor: "#FFC72C", paddingTop: "80px", paddingBottom: "40px",
         textAlign: "center", borderBottom: "5px solid #1A1A1A", width: "100%",
     },
     innerContainer: { width: "100%", maxWidth: "1200px", margin: "0 auto", padding: "0 20px", boxSizing: "border-box" },
-    heroTitle: { fontFamily: "'Oswald', sans-serif", fontSize: "72px", margin: 0, color: "#1A1A1A", lineHeight: "1" },
-    heroSubtitle: { fontFamily: "'Public Sans', sans-serif", fontWeight: "900", fontSize: "18px", letterSpacing: "4px", marginTop: "10px", color: "#1A1A1A" },
+    heroTitle: { fontFamily: "'Oswald', sans-serif", fontSize: "clamp(32px, 8vw, 72px)", margin: 0, color: "#1A1A1A", lineHeight: "1" },
+    heroSubtitle: { fontFamily: "'Public Sans', sans-serif", fontWeight: "900", fontSize: "clamp(12px, 3vw, 18px)", letterSpacing: "2px", marginTop: "10px", color: "#1A1A1A" },
     posLayout: { display: "flex", alignItems: "flex-start", width: "100%", minHeight: "calc(100vh - 80px)" },
-    leftPane: { flex: 1, minWidth: 0, padding: "32px 28px", overflowY: "auto" },
-    catBar: { display: "flex", gap: "10px", flexWrap: "wrap", marginBottom: "32px" },
+    leftPane: { flex: 1, minWidth: 0, padding: "clamp(12px, 4vw, 32px)", overflowY: "auto" },
+    catBar: { display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "24px" },
     catPill: {
-        display: "flex", alignItems: "center", gap: "6px", padding: "8px 18px",
-        fontFamily: "'Public Sans', sans-serif", fontWeight: "900", fontSize: "13px", letterSpacing: "0.5px",
+        display: "flex", alignItems: "center", gap: "6px", padding: "6px 12px",
+        fontFamily: "'Public Sans', sans-serif", fontWeight: "900", fontSize: "clamp(11px, 2vw, 13px)", letterSpacing: "0.5px",
         border: "2px solid #1A1A1A", backgroundColor: "#fff", color: "#1A1A1A",
         cursor: "pointer", transition: "all 0.15s", boxShadow: "2px 2px 0 #1A1A1A",
     },
@@ -572,43 +587,19 @@ const c = {
         flex: 1, lineHeight: "1.4", display: "-webkit-box",
         WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden",
     },
-
-    /* Flavor picker */
-    flavorSection: {
-        marginBottom: "10px",
-        padding: "10px 10px 8px",
-        backgroundColor: "#fafafa",
-        border: "1.5px solid #e8e8e8",
-        borderRadius: "10px",
-    },
-    flavorTitle: {
-        fontFamily: "'Public Sans', sans-serif", fontWeight: "900", fontSize: "9px",
-        letterSpacing: "1px", margin: "0 0 7px", transition: "color 0.2s",
-    },
-    flavorGrid: {
-        display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "5px",
-    },
+    flavorSection: { marginBottom: "10px", padding: "10px 10px 8px", backgroundColor: "#fafafa", border: "1.5px solid #e8e8e8", borderRadius: "10px" },
+    flavorTitle: { fontFamily: "'Public Sans', sans-serif", fontWeight: "900", fontSize: "9px", letterSpacing: "1px", margin: "0 0 7px", transition: "color 0.2s" },
+    flavorGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(60px, 1fr))", gap: "5px" },
     flavorBtn: {
-        display: "flex", alignItems: "center", gap: "4px",
-        padding: "5px 8px", borderRadius: "6px",
+        display: "flex", alignItems: "center", gap: "4px", padding: "5px 8px", borderRadius: "6px",
         fontFamily: "'Public Sans', sans-serif", fontSize: "10px", letterSpacing: "0.3px",
-        cursor: "pointer", transition: "all 0.15s", textAlign: "left",
-        whiteSpace: "nowrap", overflow: "hidden",
+        cursor: "pointer", transition: "all 0.15s", textAlign: "left", whiteSpace: "nowrap", overflow: "hidden",
     },
-
-    /* Selected flavor chip below footer */
     selectedFlavorChip: {
-        display: "inline-flex", alignItems: "center", gap: "6px",
-        marginTop: "8px", padding: "4px 10px",
-        backgroundColor: "#e8f5e9", border: "1.5px solid #27ae60",
-        borderRadius: "999px", alignSelf: "flex-start",
+        display: "inline-flex", alignItems: "center", gap: "6px", marginTop: "8px", padding: "4px 10px",
+        backgroundColor: "#e8f5e9", border: "1.5px solid #27ae60", borderRadius: "999px", alignSelf: "flex-start",
     },
-    chipClear: {
-        background: "none", border: "none", cursor: "pointer",
-        fontFamily: "'Public Sans', sans-serif", fontWeight: "900",
-        fontSize: "10px", color: "#27ae60", padding: 0, lineHeight: 1,
-    },
-
+    chipClear: { background: "none", border: "none", cursor: "pointer", fontFamily: "'Public Sans', sans-serif", fontWeight: "900", fontSize: "10px", color: "#27ae60", padding: 0, lineHeight: 1 },
     cardFooter: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px", marginTop: "auto" },
     cardPrice: { fontFamily: "'Oswald', sans-serif", fontSize: "18px", fontWeight: "900", color: "#27ae60" },
     addToCartBtn: {
@@ -617,27 +608,12 @@ const c = {
         fontFamily: "'Public Sans', sans-serif", fontWeight: "900", fontSize: "12px",
         cursor: "pointer", letterSpacing: "0.3px", transition: "all 0.15s",
     },
-    soldTag: {
-        fontFamily: "'Public Sans', sans-serif", fontSize: "11px", fontWeight: "900",
-        color: "#e74c3c", letterSpacing: "0.5px", border: "1.5px solid #e74c3c", borderRadius: "6px", padding: "4px 10px",
-    },
+    soldTag: { fontFamily: "'Public Sans', sans-serif", fontSize: "11px", fontWeight: "900", color: "#e74c3c", letterSpacing: "0.5px", border: "1.5px solid #e74c3c", borderRadius: "6px", padding: "4px 10px" },
     qtyRow: { display: "flex", alignItems: "center", gap: "6px" },
-    qtyBox: {
-        display: "flex", alignItems: "center", backgroundColor: "#f0faf4",
-        borderRadius: "999px", border: "1.5px solid #27ae60", overflow: "hidden", padding: "2px 4px",
-    },
-    qtyBtn: {
-        backgroundColor: "transparent", border: "none", width: "26px", height: "26px",
-        fontSize: "16px", fontWeight: "900", cursor: "pointer", color: "#27ae60",
-        fontFamily: "'Oswald', sans-serif", lineHeight: 1,
-        display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "50%",
-    },
+    qtyBox: { display: "flex", alignItems: "center", backgroundColor: "#f0faf4", borderRadius: "999px", border: "1.5px solid #27ae60", overflow: "hidden", padding: "2px 4px" },
+    qtyBtn: { backgroundColor: "transparent", border: "none", width: "26px", height: "26px", fontSize: "16px", fontWeight: "900", cursor: "pointer", color: "#27ae60", fontFamily: "'Oswald', sans-serif", lineHeight: 1, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "50%" },
     qtyNum: { fontFamily: "'Oswald', sans-serif", fontSize: "14px", fontWeight: "900", width: "22px", textAlign: "center", color: "#1A1A1A" },
-    addBtn: {
-        border: "1.5px solid #27ae60", borderRadius: "8px", padding: "6px 10px",
-        fontFamily: "'Public Sans', sans-serif", fontWeight: "900", fontSize: "11px",
-        cursor: "pointer", transition: "all 0.15s", whiteSpace: "nowrap",
-    },
+    addBtn: { border: "1.5px solid #27ae60", borderRadius: "8px", padding: "6px 10px", fontFamily: "'Public Sans', sans-serif", fontWeight: "900", fontSize: "11px", cursor: "pointer", transition: "all 0.15s", whiteSpace: "nowrap" },
 };
 
 const p = {
@@ -649,6 +625,7 @@ const p = {
     panelHead: { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "20px 20px 12px", borderBottom: "2px solid #1A1A1A", flexShrink: 0 },
     panelTitle: { fontFamily: "'Oswald', sans-serif", fontSize: "18px", fontWeight: "900", letterSpacing: "1px", color: "#1A1A1A" },
     itemCount: { backgroundColor: "#FFC72C", color: "#1A1A1A", fontFamily: "'Public Sans', sans-serif", fontWeight: "900", fontSize: "12px", padding: "2px 10px", border: "2px solid #1A1A1A" },
+    drawerCloseBtn: { background: "none", border: "2px solid #1A1A1A", padding: "2px 8px", fontFamily: "'Public Sans', sans-serif", fontWeight: "900", fontSize: "12px", cursor: "pointer", color: "#1A1A1A" },
     tabs: { display: "flex", borderBottom: "2px solid #1A1A1A", flexShrink: 0 },
     tab: { flex: 1, padding: "10px 0", border: "none", borderRight: "1px solid #e0e0e0", backgroundColor: "#F5F5F5", fontFamily: "'Public Sans', sans-serif", fontWeight: "900", fontSize: "11px", cursor: "pointer", color: "#888", letterSpacing: "0.5px" },
     tabActive: { backgroundColor: "#fff", color: "#1A1A1A", borderBottom: "3px solid #FFC72C" },
@@ -682,6 +659,7 @@ const p = {
         border: "3px solid #1A1A1A", boxShadow: "4px 4px 0 #1A1A1A",
         fontFamily: "'Oswald', sans-serif", fontWeight: "900", fontSize: "18px",
         letterSpacing: "1px", color: "#1A1A1A", flexShrink: 0, transition: "transform 0.1s, box-shadow 0.1s",
+        cursor: "pointer",
     },
 };
 
@@ -702,6 +680,92 @@ const g = {
         letterSpacing: "1px", color: "#1A1A1A", cursor: "pointer",
     },
     hint: { fontFamily: "'Public Sans', sans-serif", fontSize: "11px", color: "#bbb", margin: 0, fontWeight: "700" },
+};
+
+/* ── Mobile FAB ── */
+const fab = {
+    btn: {
+        display: "none", /* shown via CSS class on mobile */
+        position: "fixed",
+        bottom: "20px",
+        left: "50%",
+        transform: "translateX(-50%)",
+        zIndex: 1000,
+        alignItems: "center",
+        gap: "8px",
+        padding: "14px 28px",
+        backgroundColor: "#FFC72C",
+        border: "3px solid #1A1A1A",
+        boxShadow: "4px 4px 0 #1A1A1A",
+        fontFamily: "'Oswald', sans-serif",
+        fontWeight: "900",
+        fontSize: "16px",
+        letterSpacing: "1px",
+        color: "#1A1A1A",
+        cursor: "pointer",
+        whiteSpace: "nowrap",
+    },
+    icon: { fontSize: "18px" },
+    label: {},
+    badge: {
+        backgroundColor: "#1A1A1A",
+        color: "#FFC72C",
+        fontFamily: "'Oswald', sans-serif",
+        fontWeight: "900",
+        fontSize: "12px",
+        padding: "1px 7px",
+        borderRadius: "999px",
+        minWidth: "20px",
+        textAlign: "center",
+    },
+};
+
+/* ── Bottom drawer ── */
+const d = {
+    backdrop: {
+        position: "fixed",
+        inset: 0,
+        backgroundColor: "rgba(0,0,0,0.5)",
+        zIndex: 1001,
+        transition: "opacity 0.3s ease",
+    },
+    drawer: {
+        position: "fixed",
+        bottom: 0,
+        left: 0,
+        right: 0,
+        zIndex: 1002,
+        backgroundColor: "#fff",
+        borderTop: "3px solid #1A1A1A",
+        borderRadius: "16px 16px 0 0",
+        display: "flex",
+        flexDirection: "column",
+        /* Take up to 85% of screen height */
+        maxHeight: "85vh",
+        overflowY: "hidden",
+        transition: "transform 0.35s cubic-bezier(0.32, 0.72, 0, 1)",
+    },
+    dragHandle: {
+        width: "40px",
+        height: "4px",
+        backgroundColor: "#ccc",
+        borderRadius: "2px",
+        margin: "12px auto 4px",
+        flexShrink: 0,
+    },
+    closeBtn: {
+        margin: "0 20px 16px",
+        padding: "12px",
+        border: "2px solid #1A1A1A",
+        background: "none",
+        fontFamily: "'Oswald', sans-serif",
+        fontWeight: "900",
+        fontSize: "13px",
+        letterSpacing: "1px",
+        cursor: "pointer",
+        color: "#888",
+        flexShrink: 0,
+    },
 };
 
 export default Menu;

@@ -4,20 +4,22 @@ import { login, register } from "./Auth_Service";
 
 const Auth = () => {
     const [isLogin, setIsLogin] = useState(true);
-    const [formData, setFormData] = useState({ name: "", email: "", password: "" });
+    const [formData, setFormData] = useState({ name: "", email: "", password: "", role: "customer", adminCode: "" });
+    const [error, setError] = useState("");
     const navigate = useNavigate();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setError("");
         try {
             if (isLogin) {
                 await login(formData.email, formData.password);
             } else {
-                await register(formData.name, formData.email, formData.password);
+                await register(formData.name, formData.email, formData.password, formData.role, formData.adminCode);
             }
             navigate("/"); // Go home after success
         } catch (error) {
-            alert(error.message);
+            setError(error.message);
         }
     };
 
@@ -25,6 +27,8 @@ const Auth = () => {
         <div style={styles.page}>
             <div style={styles.card}>
                 <h2 style={styles.title}>{isLogin ? "WELCOME BACK" : "JOIN THE CRUNCH"}</h2>
+                {error && <div style={styles.errorMessage}>{error}</div>}
+                
                 
                 <form onSubmit={handleSubmit} style={styles.form}>
                     {!isLogin && (
@@ -49,6 +53,44 @@ const Auth = () => {
                         onChange={(e) => setFormData({...formData, password: e.target.value})}
                         required
                     />
+                    
+                    {!isLogin && (
+                        <div style={styles.roleSection}>
+                            <label style={styles.roleLabel}>Account Type:</label>
+                            <div style={styles.roleOptions}>
+                                <label style={styles.radioLabel}>
+                                    <input 
+                                        type="radio" 
+                                        name="role" 
+                                        value="customer"
+                                        checked={formData.role === "customer"}
+                                        onChange={(e) => setFormData({...formData, role: e.target.value})}
+                                    />
+                                    Customer
+                                </label>
+                                <label style={styles.radioLabel}>
+                                    <input 
+                                        type="radio" 
+                                        name="role" 
+                                        value="admin"
+                                        checked={formData.role === "admin"}
+                                        onChange={(e) => setFormData({...formData, role: e.target.value})}
+                                    />
+                                    Admin
+                                </label>
+                            </div>
+                        </div>
+                    )}
+
+                    {!isLogin && formData.role === "admin" && (
+                        <input 
+                            style={styles.input} 
+                            type="password"
+                            placeholder="ADMIN VERIFICATION CODE" 
+                            onChange={(e) => setFormData({...formData, adminCode: e.target.value})}
+                            required
+                        />
+                    )}
                     
                     <button type="submit" style={styles.submitBtn}>
                         {isLogin ? "LOG IN" : "CREATE ACCOUNT"}
@@ -100,7 +142,26 @@ const styles = {
         textAlign: "center", marginTop: "20px",
         fontFamily: "'Public Sans', sans-serif", fontSize: "14px", fontWeight: "700"
     },
-    toggleLink: { color: "#FFC72C", cursor: "pointer", textDecoration: "underline" }
+    toggleLink: { color: "#FFC72C", cursor: "pointer", textDecoration: "underline" },
+    roleSection: {
+        border: "2px solid #1A1A1A", padding: "15px", 
+        fontFamily: "'Public Sans', sans-serif", marginTop: "10px"
+    },
+    roleLabel: {
+        display: "block", fontWeight: "700", marginBottom: "10px",
+        fontSize: "14px", color: "#1A1A1A"
+    },
+    roleOptions: { display: "flex", gap: "20px" },
+    radioLabel: {
+        display: "flex", alignItems: "center", gap: "8px",
+        cursor: "pointer", fontFamily: "'Public Sans', sans-serif",
+        fontSize: "13px", fontWeight: "700"
+    },
+    errorMessage: {
+        backgroundColor: "#ff6b6b", color: "#fff", padding: "12px",
+        borderRadius: "4px", marginBottom: "15px", fontWeight: "700",
+        fontFamily: "'Public Sans', sans-serif", fontSize: "14px"
+    }
 };
 
 export default Auth;

@@ -265,60 +265,60 @@ const s = {
     page: { backgroundColor: "#F9F9F9" },
 
     // Hero
-    hero: { minHeight: "92vh", backgroundColor: "#FFC72C", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", textAlign: "center", position: "relative", overflow: "hidden", padding: "80px 20px 120px" },
+    hero: { minHeight: "90vh", backgroundColor: "#FFC72C", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", textAlign: "center", position: "relative", overflow: "hidden", padding: "clamp(60px, 10vw, 80px) 20px clamp(80px, 14vw, 120px)" },
     heroDots: { position: "absolute", inset: 0, backgroundImage: "radial-gradient(#1A1A1A22 1.5px, transparent 1.5px)", backgroundSize: "28px 28px", zIndex: 0 },
     heroContent: { maxWidth: "820px", zIndex: 2, position: "relative" },
-    badge: { display: "inline-block", backgroundColor: "#1A1A1A", color: "#FFC72C", padding: "8px 24px", fontFamily: "'Public Sans', sans-serif", fontWeight: "900", fontSize: "13px", letterSpacing: "4px", marginBottom: "24px", transform: "rotate(-1.5deg)" },
-    heroTitle: { fontFamily: "'Oswald', sans-serif", fontSize: "clamp(64px, 11vw, 108px)", fontWeight: "900", lineHeight: "0.88", color: "#1A1A1A", margin: "0 0 24px" },
-    heroHighlight: { color: "#fff", textShadow: "5px 5px 0px #1A1A1A", display: "block" },
-    heroSub: { fontFamily: "'Public Sans', sans-serif", fontSize: "18px", fontWeight: "600", color: "#1A1A1A", maxWidth: "480px", margin: "0 auto 40px", lineHeight: "1.6" },
-    heroSlant: { position: "absolute", bottom: "-50px", left: 0, width: "100%", height: "140px", backgroundColor: "#F9F9F9", transform: "skewY(-3deg)", zIndex: 1 },
+    badge: { display: "inline-block", backgroundColor: "#1A1A1A", color: "#FFC72C", padding: "6px 12px", fontFamily: "'Public Sans', sans-serif", fontWeight: "900", fontSize: "clamp(10px, 2vw, 13px)", letterSpacing: "2px", marginBottom: "clamp(12px, 4vw, 24px)", transform: "rotate(-1.5deg)" },
+    heroTitle: { fontFamily: "'Oswald', sans-serif", fontSize: "clamp(48px, 10vw, 108px)", fontWeight: "900", lineHeight: "0.88", color: "#1A1A1A", margin: "0 0 clamp(12px, 3vw, 24px)" },
+    heroHighlight: { color: "#fff", textShadow: "3px 3px 0px #1A1A1A", display: "block" },
+    heroSub: { fontFamily: "'Public Sans', sans-serif", fontSize: "clamp(14px, 3vw, 18px)", fontWeight: "600", color: "#1A1A1A", maxWidth: "480px", margin: "0 auto clamp(24px, 6vw, 40px)", lineHeight: "1.6" },
+    heroSlant: { position: "absolute", bottom: "-40px", left: 0, width: "100%", height: "100px", backgroundColor: "#F9F9F9", transform: "skewY(-3deg)", zIndex: 1 },
 
     // Buttons
-    btnGroup: { display: "flex", gap: "16px", justifyContent: "center", flexWrap: "wrap" },
-    btnPrimary: { backgroundColor: "#1A1A1A", color: "#FFC72C", padding: "18px 44px", border: "none", fontFamily: "'Oswald', sans-serif", fontSize: "20px", fontWeight: "bold", cursor: "pointer", boxShadow: "8px 8px 0px #fff", transition: "background .2s, box-shadow .2s", letterSpacing: "1px" },
-    btnSecondary: { backgroundColor: "transparent", color: "#1A1A1A", padding: "18px 44px", border: "3px solid #1A1A1A", fontFamily: "'Oswald', sans-serif", fontSize: "20px", fontWeight: "bold", cursor: "pointer", transition: "background .2s, color .2s", letterSpacing: "1px" },
+    btnGroup: { display: "flex", gap: "clamp(8px, 3vw, 16px)", justifyContent: "center", flexWrap: "wrap" },
+    btnPrimary: { backgroundColor: "#1A1A1A", color: "#FFC72C", padding: "clamp(12px, 3vw, 18px) clamp(20px, 5vw, 44px)", border: "none", fontFamily: "'Oswald', sans-serif", fontSize: "clamp(14px, 3vw, 20px)", fontWeight: "bold", cursor: "pointer", boxShadow: "4px 4px 0px #fff", transition: "background .2s, box-shadow .2s", letterSpacing: "1px", minHeight: "44px", display: "flex", alignItems: "center" },
+    btnSecondary: { backgroundColor: "transparent", color: "#1A1A1A", padding: "clamp(12px, 3vw, 18px) clamp(20px, 5vw, 44px)", border: "3px solid #1A1A1A", fontFamily: "'Oswald', sans-serif", fontSize: "clamp(14px, 3vw, 20px)", fontWeight: "bold", cursor: "pointer", transition: "background .2s, color .2s", letterSpacing: "1px", minHeight: "44px", display: "flex", alignItems: "center" },
 
     // Ticker
-    tickerWrap: { backgroundColor: "#1A1A1A", overflow: "hidden", borderTop: "3px solid #FFC72C", borderBottom: "3px solid #FFC72C", padding: "13px 0" },
+    tickerWrap: { backgroundColor: "#1A1A1A", overflow: "hidden", borderTop: "3px solid #FFC72C", borderBottom: "3px solid #FFC72C", padding: "8px 0" },
     tickerTrack: { display: "flex", whiteSpace: "nowrap", width: "max-content" },
-    tickerItem: { fontFamily: "'Oswald', sans-serif", color: "#FFC72C", fontSize: "14px", fontWeight: "700", letterSpacing: "3px", padding: "0 28px" },
+    tickerItem: { fontFamily: "'Oswald', sans-serif", color: "#FFC72C", fontSize: "clamp(12px, 2.5vw, 14px)", fontWeight: "700", letterSpacing: "2px", padding: "0 clamp(16px, 4vw, 28px)" },
     tickerDot: { color: "#fff" },
 
     // Stats
-    statBar: { display: "flex", justifyContent: "space-around", flexWrap: "wrap", backgroundColor: "#fff", borderBottom: "3px solid #1A1A1A", padding: "30px 8%" },
-    statItem: { display: "flex", flexDirection: "column", alignItems: "center", padding: "10px 20px" },
-    statNum: { fontFamily: "'Oswald', sans-serif", fontSize: "42px", fontWeight: "900", color: "#1A1A1A", lineHeight: "1" },
-    statLabel: { fontFamily: "'Public Sans', sans-serif", fontSize: "13px", fontWeight: "700", color: "#888", letterSpacing: "2px", marginTop: "4px", textTransform: "uppercase" },
+    statBar: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", backgroundColor: "#fff", borderBottom: "3px solid #1A1A1A", padding: "clamp(20px, 4vw, 30px) clamp(12px, 4vw, 32px)" },
+    statItem: { display: "flex", flexDirection: "column", alignItems: "center", padding: "clamp(8px, 2vw, 10px)" },
+    statNum: { fontFamily: "'Oswald', sans-serif", fontSize: "clamp(28px, 6vw, 42px)", fontWeight: "900", color: "#1A1A1A", lineHeight: "1" },
+    statLabel: { fontFamily: "'Public Sans', sans-serif", fontSize: "clamp(10px, 2vw, 13px)", fontWeight: "700", color: "#888", letterSpacing: "1px", marginTop: "4px", textTransform: "uppercase" },
 
     // Sections
-    section: { padding: "90px 8%", backgroundColor: "#F9F9F9" },
-    sectionHeader: { textAlign: "center", marginBottom: "60px" },
-    sectionTag: { display: "inline-block", backgroundColor: "#1A1A1A", color: "#FFC72C", padding: "6px 18px", fontFamily: "'Public Sans', sans-serif", fontWeight: "900", fontSize: "12px", letterSpacing: "3px", marginBottom: "16px" },
-    sectionTitle: { fontFamily: "'Oswald', sans-serif", fontSize: "48px", fontWeight: "900", color: "#1A1A1A", margin: 0 },
+    section: { padding: "clamp(50px, 10vw, 90px) clamp(12px, 6vw, 64px)", backgroundColor: "#F9F9F9" },
+    sectionHeader: { textAlign: "center", marginBottom: "clamp(30px, 8vw, 60px)" },
+    sectionTag: { display: "inline-block", backgroundColor: "#1A1A1A", color: "#FFC72C", padding: "6px 14px", fontFamily: "'Public Sans', sans-serif", fontWeight: "900", fontSize: "clamp(10px, 2vw, 12px)", letterSpacing: "2px", marginBottom: "12px" },
+    sectionTitle: { fontFamily: "'Oswald', sans-serif", fontSize: "clamp(32px, 8vw, 48px)", fontWeight: "900", color: "#1A1A1A", margin: 0 },
 
     // Features
-    featureGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "24px" },
-    featureCard: { backgroundColor: "#fff", border: "3px solid #1A1A1A", padding: "36px 28px", boxShadow: "6px 6px 0px #1A1A1A", transition: "background .2s", cursor: "default" },
-    featIcon: { fontSize: "40px", display: "block", marginBottom: "16px" },
-    featTitle: { fontFamily: "'Oswald', sans-serif", fontSize: "22px", color: "#1A1A1A", margin: "0 0 12px", textTransform: "uppercase" },
-    featDesc: { fontFamily: "'Public Sans', sans-serif", fontSize: "14px", color: "#555", lineHeight: "1.7", margin: 0 },
+    featureGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "clamp(16px, 4vw, 24px)" },
+    featureCard: { backgroundColor: "#fff", border: "3px solid #1A1A1A", padding: "clamp(20px, 5vw, 36px)", boxShadow: "4px 4px 0px #1A1A1A", transition: "background .2s", cursor: "default" },
+    featIcon: { fontSize: "clamp(28px, 7vw, 40px)", display: "block", marginBottom: "12px" },
+    featTitle: { fontFamily: "'Oswald', sans-serif", fontSize: "clamp(16px, 4vw, 22px)", color: "#1A1A1A", margin: "0 0 12px", textTransform: "uppercase" },
+    featDesc: { fontFamily: "'Public Sans', sans-serif", fontSize: "clamp(13px, 2vw, 14px)", color: "#555", lineHeight: "1.6", margin: 0 },
 
     // Best Sellers
-    bsGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "32px" },
-    bsCard: { backgroundColor: "#fff", border: "3px solid #FFC72C", boxShadow: "8px 8px 0px #FFC72C", overflow: "hidden" },
-    bsImgWrap: { position: "relative", height: "210px", borderBottom: "3px solid #FFC72C", overflow: "hidden" },
+    bsGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "clamp(16px, 4vw, 32px)" },
+    bsCard: { backgroundColor: "#fff", border: "3px solid #FFC72C", boxShadow: "6px 6px 0px #FFC72C", overflow: "hidden" },
+    bsImgWrap: { position: "relative", height: "auto", aspectRatio: "300 / 210", borderBottom: "3px solid #FFC72C", overflow: "hidden" },
     bsImg: { width: "100%", height: "100%", objectFit: "cover" },
-    bsPrice: { position: "absolute", bottom: 0, left: 0, backgroundColor: "#FFC72C", color: "#1A1A1A", fontFamily: "'Oswald', sans-serif", fontSize: "22px", fontWeight: "900", padding: "6px 16px", border: "3px solid #1A1A1A", borderLeft: "none", borderBottom: "none" },
-    bsInfo: { padding: "20px" },
-    bsCategory: { fontFamily: "'Public Sans', sans-serif", fontSize: "11px", fontWeight: "900", letterSpacing: "3px", color: "#FFC72C", margin: "0 0 6px", textTransform: "uppercase" },
-    bsName: { fontFamily: "'Oswald', sans-serif", fontSize: "22px", color: "#1A1A1A", margin: "0 0 8px", textTransform: "uppercase" },
-    bsDesc: { fontFamily: "'Public Sans', sans-serif", fontSize: "13px", color: "#666", margin: 0, lineHeight: "1.6" },
+    bsPrice: { position: "absolute", bottom: 0, left: 0, backgroundColor: "#FFC72C", color: "#1A1A1A", fontFamily: "'Oswald', sans-serif", fontSize: "clamp(16px, 4vw, 22px)", fontWeight: "900", padding: "6px 12px", border: "3px solid #1A1A1A", borderLeft: "none", borderBottom: "none" },
+    bsInfo: { padding: "clamp(12px, 3vw, 20px)" },
+    bsCategory: { fontFamily: "'Public Sans', sans-serif", fontSize: "clamp(9px, 2vw, 11px)", fontWeight: "900", letterSpacing: "2px", color: "#FFC72C", margin: "0 0 6px", textTransform: "uppercase" },
+    bsName: { fontFamily: "'Oswald', sans-serif", fontSize: "clamp(16px, 4vw, 22px)", color: "#1A1A1A", margin: "0 0 8px", textTransform: "uppercase" },
+    bsDesc: { fontFamily: "'Public Sans', sans-serif", fontSize: "clamp(12px, 2vw, 13px)", color: "#666", margin: 0, lineHeight: "1.6" },
 
     // CTA
-    cta: { backgroundColor: "#FFC72C", padding: "100px 8%", textAlign: "center", borderTop: "5px solid #1A1A1A" },
-    ctaTitle: { fontFamily: "'Oswald', sans-serif", fontSize: "clamp(40px, 7vw, 72px)", fontWeight: "900", color: "#1A1A1A", margin: "0 0 16px" },
-    ctaSub: { fontFamily: "'Public Sans', sans-serif", fontSize: "18px", fontWeight: "600", color: "#1A1A1A", marginBottom: "40px" },
+    cta: { backgroundColor: "#FFC72C", padding: "clamp(50px, 10vw, 100px) clamp(12px, 6vw, 64px)", textAlign: "center", borderTop: "5px solid #1A1A1A" },
+    ctaTitle: { fontFamily: "'Oswald', sans-serif", fontSize: "clamp(32px, 8vw, 72px)", fontWeight: "900", color: "#1A1A1A", margin: "0 0 clamp(12px, 3vw, 16px)" },
+    ctaSub: { fontFamily: "'Public Sans', sans-serif", fontSize: "clamp(14px, 3vw, 18px)", fontWeight: "600", color: "#1A1A1A", marginBottom: "clamp(24px, 6vw, 40px)" },
 };
 
 export default Home;

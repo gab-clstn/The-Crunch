@@ -1,7 +1,7 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import { useCart } from "./Cart_Context";
 import { useAuth } from "./Auth_Context";
-import { placeOrder } from "./Order_Service";
+import { placeOrder } from "./Orders_Service";
 import { imageMap } from "./assets/imageMap";
 import { useState } from "react";
 
@@ -12,8 +12,9 @@ const Cart = () => {
     const { currentUser } = useAuth();
     const [isPlacing, setIsPlacing] = useState(false);
 
-    const [customerNameInput, setCustomerNameInput] = useState(""); // ✅ FIXED
+    const [customerNameInput, setCustomerNameInput] = useState("");
     const [paymentMethod, setPaymentMethod] = useState("Cash");
+    const [showSummaryMobile, setShowSummaryMobile] = useState(false);
 
     const orderType = state?.orderType || "Dine In";
     const deliveryAddress = state?.deliveryAddress || "";
@@ -52,8 +53,6 @@ const Cart = () => {
                 deliveryFee,
                 total,
                 paymentMethod,
-
-                // ✅ FIXED: always use input
                 customerName: customerNameInput.trim(),
             });
 
@@ -77,8 +76,98 @@ const Cart = () => {
     const orderTypeIcon = { "Dine In": "🍽️", "Pick-Up": "🏃", "Delivery": "🛵" }[orderType] || "🛒";
 
     return (
-        <div style={s.page}>
-            <div style={s.left}>
+        <div style={s.page} className="cart-page">
+            <style>{`
+                /* ── Mobile: stack vertically ── */
+                @media (max-width: 768px) {
+                    .cart-page {
+                        flex-direction: column !important;
+                        min-height: auto !important;
+                        margin-top: 80px;
+                    }
+
+                    /* Left panel: full width, no right border */
+                    .cart-left {
+                        flex: none !important;
+                        width: 100% !important;
+                        box-sizing: border-box !important;
+                        border-right: none !important;
+                        border-bottom: 3px solid #1A1A1A !important;
+                        padding: 24px 16px !important;
+                    }
+
+                    /* Right panel: full width, natural height, no overflow */
+                    .cart-right {
+                        width: 100% !important;
+                        flex-shrink: unset !important;
+                        flex-basis: auto !important;
+                        padding: 0 !important;
+                        border-left: none !important;
+                        border-top: 3px solid #1A1A1A !important;
+                        background: white !important;
+                        /* Remove any fixed/min heights that could cause overlap */
+                        min-height: unset !important;
+                        max-height: unset !important;
+                        overflow: visible !important;
+                    }
+
+                    /* Toggle button: always visible on mobile */
+                    .toggle-summary-btn {
+                        display: flex !important;
+                        width: 100% !important;
+                        padding: 14px 20px !important;
+                        border: none !important;
+                        border-bottom: 3px solid #1A1A1A !important;
+                        background: #FFC72C !important;
+                        font-family: 'Oswald', sans-serif !important;
+                        font-weight: 900 !important;
+                        font-size: 14px !important;
+                        letter-spacing: 0.5px !important;
+                        cursor: pointer !important;
+                        color: #1A1A1A !important;
+                        justify-content: center !important;
+                        align-items: center !important;
+                        box-sizing: border-box !important;
+                    }
+
+                    /* Summary card: un-stick it, collapse/expand naturally */
+                    .cart-summary-card {
+                        position: static !important;
+                        top: auto !important;
+                        padding: 20px 16px !important;
+                        margin: 0 !important;
+                        /* Collapse animation */
+                        overflow: hidden !important;
+                        transition: max-height 0.3s ease, opacity 0.3s ease !important;
+                    }
+
+                    .cart-summary-card.collapsed {
+                        max-height: 0 !important;
+                        padding-top: 0 !important;
+                        padding-bottom: 0 !important;
+                        opacity: 0 !important;
+                    }
+
+                    .cart-summary-card.expanded {
+                        max-height: 1000px !important;
+                        opacity: 1 !important;
+                    }
+                }
+
+                /* ── Desktop: hide toggle button ── */
+                @media (min-width: 769px) {
+                    .toggle-summary-btn {
+                        display: none !important;
+                    }
+                    .cart-summary-card {
+                        max-height: none !important;
+                        opacity: 1 !important;
+                    }
+                }
+            `}</style>
+
+            {/* ── LEFT: Item list ── */}
+            <div style={s.left} className="cart-left">
                 <button style={s.backBtn} onClick={() => navigate("/menu")}>
                     ← BACK TO MENU
                 </button>
@@ -128,13 +217,30 @@ const Cart = () => {
                 )}
             </div>
 
-            <div style={s.right}>
-                <div style={s.summaryCard}>
+            {/* ── RIGHT: Order summary ── */}
+            <div style={s.right} className="cart-right">
+                {/* Toggle button — only visible on mobile via CSS */}
+                <button
+                    style={s.toggleSummaryBtn}
+                    onClick={() => setShowSummaryMobile(prev => !prev)}
+                    className="toggle-summary-btn"
+                >
+                    {showSummaryMobile ? "▲ HIDE ORDER SUMMARY" : "▼ SHOW ORDER SUMMARY"}
+                </button>
+
+                {/* 
+                    On mobile: apply "collapsed" or "expanded" class to drive CSS transition.
+                    On desktop: CSS ignores these classes (max-height: none).
+                */}
+                <div
+                    style={s.summaryCard}
+                    className={`cart-summary-card ${showSummaryMobile ? "expanded" : "collapsed"}`}
+                >
                     <h2 style={s.summaryTitle}>ORDER SUMMARY</h2>
 
-                    {/* ✅ CUSTOMER NAME INPUT (FIXED POSITION) */}
+                    {/* Customer name */}
                     <div style={{ marginBottom: "16px" }}>
-                        <p style={{ fontFamily: "'Oswald', sans-serif", fontWeight: "900" }}>
+                        <p style={{ fontFamily: "'Oswald', sans-serif", fontWeight: "900", margin: "0 0 8px" }}>
                             CUSTOMER NAME
                         </p>
                         <input
@@ -147,16 +253,17 @@ const Cart = () => {
                                 padding: "10px",
                                 border: "2px solid #1A1A1A",
                                 fontFamily: "'Public Sans', sans-serif",
+                                boxSizing: "border-box",
                             }}
                         />
                     </div>
 
+                    {/* Totals */}
                     <div style={s.summaryRows}>
                         <div style={s.summaryRow}>
                             <span style={s.summaryLabel}>Subtotal</span>
                             <span style={s.summaryValue}>₱{subtotal.toFixed(2)}</span>
                         </div>
-
                         {orderType === "Delivery" && (
                             <div style={s.summaryRow}>
                                 <span style={s.summaryLabel}>Delivery Fee</span>
@@ -170,9 +277,9 @@ const Cart = () => {
                         </div>
                     </div>
 
+                    {/* Payment method */}
                     <div style={s.paymentBox}>
                         <p style={s.paymentTitle}>PAYMENT METHOD</p>
-
                         {["Cash", "GCash", "QRPH"].map(method => (
                             <button
                                 key={method}
@@ -187,6 +294,7 @@ const Cart = () => {
                         ))}
                     </div>
 
+                    {/* Confirm */}
                     <button
                         style={{
                             ...s.confirmBtn,
@@ -208,9 +316,6 @@ const Cart = () => {
     );
 };
 
-// styles unchanged...
-
-
 const s = {
     page: {
         display: "flex",
@@ -222,6 +327,8 @@ const s = {
         flex: 1,
         padding: "48px 40px",
         borderRight: "3px solid #1A1A1A",
+        /* Ensure it never goes below its natural width on desktop */
+        minWidth: 0,
     },
     backBtn: {
         background: "none",
@@ -373,6 +480,10 @@ const s = {
         flexDirection: "column",
         gap: "0",
     },
+    toggleSummaryBtn: {
+        /* Hidden on desktop via CSS class; shown on mobile */
+        display: "none",
+    },
     summaryTitle: {
         fontFamily: "'Oswald', sans-serif",
         fontSize: "22px",
@@ -390,32 +501,6 @@ const s = {
     divider: { borderTop: "2px dashed #1A1A1A", margin: "4px 0" },
     totalLabel: { fontFamily: "'Oswald', sans-serif", fontSize: "20px", fontWeight: "900", color: "#1A1A1A" },
     totalValue: { fontFamily: "'Oswald', sans-serif", fontSize: "28px", fontWeight: "900", color: "#1A1A1A" },
-    recapBox: {
-        display: "flex",
-        alignItems: "flex-start",
-        gap: "12px",
-        backgroundColor: "#fffdf0",
-        border: "2px solid #1A1A1A",
-        padding: "14px 16px",
-        marginBottom: "24px",
-    },
-    recapIcon: { fontSize: "22px", flexShrink: 0 },
-    recapType: {
-        fontFamily: "'Oswald', sans-serif",
-        fontWeight: "700",
-        fontSize: "15px",
-        color: "#1A1A1A",
-        margin: "0 0 4px",
-        textTransform: "uppercase",
-        letterSpacing: "0.5px",
-    },
-    recapAddr: {
-        fontFamily: "'Public Sans', sans-serif",
-        fontSize: "12px",
-        color: "#666",
-        margin: 0,
-        lineHeight: "1.4",
-    },
     confirmBtn: {
         width: "100%",
         backgroundColor: "#FFC72C",
@@ -442,7 +527,6 @@ const s = {
         textDecoration: "underline",
         padding: "8px",
     },
-
     paymentBox: {
         marginBottom: "20px",
         display: "flex",

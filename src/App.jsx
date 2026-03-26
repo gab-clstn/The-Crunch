@@ -10,6 +10,7 @@ import Auth from "./Auth";
 import Cart from "./Cart";
 import AdminPanel from "./Admin_Panel";
 import OrderSuccess from "./OrderSuccess";
+import ProtectedRoute from "./ProtectedRoute";
 
 function App() {
   return (
@@ -24,7 +25,7 @@ function App() {
               <Route path="/orders" element={<MyOrders />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/cart" element={<Cart />} />
-              <Route path="/admin" element={<AdminPanel />} />
+              <Route path="/admin" element={<ProtectedRoute><AdminPanel /></ProtectedRoute>} />
               <Route path="/order-success" element={<OrderSuccess />} />
             </Routes>
           </div>
