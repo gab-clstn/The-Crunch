@@ -15,7 +15,6 @@ const OrderSuccess = () => {
     }, []);
 
     const { orderId, total, orderType, itemCount } = state || {};
-
     const orderTypeIcon = { "Dine In": "🍽️", "Pick-Up": "🏃", "Delivery": "🛵" }[orderType] || "🛒";
     const orderTypeMessage = {
         "Dine In": "Will be served at your table.",
