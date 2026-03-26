@@ -102,7 +102,7 @@ const ProductCard = ({ product, selectedId, setSelectedId, isLoggedIn }) => {
                                         fontWeight: isSelected ? "900" : "700",
                                     }}
                                         onClick={() => { setSelectedFlavor(isSelected ? null : f.label); setFlavorError(false); }}>
-                                        <span style={{ fontSize: "11px" }}>{f.icon}</span>
+                                        <span style={{ fontSize: "11px", flexShrink: 0 }}>{f.icon}</span>
                                         {f.label}
                                     </button>
                                 );
@@ -188,7 +188,6 @@ const OrderPanelContent = ({ onClose }) => {
                 <span style={p.panelTitle}>ORDER SUMMARY</span>
                 <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                     <span style={p.itemCount}>{itemCount} items</span>
-                    {/* Close button only shown in drawer (onClose provided) */}
                     {onClose && (
                         <button onClick={onClose} style={p.drawerCloseBtn}>✕</button>
                     )}
@@ -299,12 +298,10 @@ const MobileOrderDrawer = ({ isOpen, onClose, isLoggedIn }) => {
     if (!isLoggedIn) {
         return (
             <>
-                {/* Backdrop */}
                 <div
                     style={{ ...d.backdrop, opacity: isOpen ? 1 : 0, pointerEvents: isOpen ? "auto" : "none" }}
                     onClick={onClose}
                 />
-                {/* Drawer */}
                 <div style={{ ...d.drawer, transform: isOpen ? "translateY(0)" : "translateY(100%)" }}>
                     <div style={d.dragHandle} />
                     <div style={g.inner}>
@@ -322,12 +319,10 @@ const MobileOrderDrawer = ({ isOpen, onClose, isLoggedIn }) => {
 
     return (
         <>
-            {/* Backdrop */}
             <div
                 style={{ ...d.backdrop, opacity: isOpen ? 1 : 0, pointerEvents: isOpen ? "auto" : "none" }}
                 onClick={onClose}
             />
-            {/* Drawer */}
             <div style={{ ...d.drawer, transform: isOpen ? "translateY(0)" : "translateY(100%)" }}>
                 <div style={d.dragHandle} />
                 <div style={{ display: "flex", flexDirection: "column", flex: 1, overflowY: "hidden" }}>
@@ -398,19 +393,16 @@ const Menu = () => {
     return (
         <>
             <style>{`
-                /* Desktop: show sidebar, hide FAB */
                 @media (min-width: 769px) {
                     .order-sidebar { display: flex !important; }
                     .mobile-cart-fab { display: none !important; }
                 }
-                /* Mobile: hide sidebar, show FAB + full-width menu */
                 @media (max-width: 768px) {
                     .order-sidebar { display: none !important; }
                     .mobile-cart-fab { display: flex !important; }
                     .menu-left-pane {
                         flex: 1 1 100% !important;
                         width: 100% !important;
-                        /* Add bottom padding so FAB doesn't cover last item */
                         padding-bottom: 100px !important;
                     }
                 }
@@ -442,7 +434,6 @@ const Menu = () => {
                 </section>
 
                 <div style={m.posLayout}>
-                    {/* ── Menu items ── */}
                     <div className="menu-left-pane" style={m.leftPane}>
                         <div style={m.catBar}>
                             {allCategories.map((cat) => (
@@ -485,12 +476,10 @@ const Menu = () => {
                         </div>
                     </div>
 
-                    {/* ── Desktop sidebar ── */}
                     {isLoggedIn ? <OrderPanel /> : <GuestBanner />}
                 </div>
             </div>
 
-            {/* ── Mobile FAB cart button ── */}
             <button
                 className="mobile-cart-fab"
                 style={fab.btn}
@@ -505,7 +494,6 @@ const Menu = () => {
                 )}
             </button>
 
-            {/* ── Mobile bottom drawer ── */}
             <MobileOrderDrawer
                 isOpen={drawerOpen}
                 onClose={() => setDrawerOpen(false)}
@@ -589,11 +577,13 @@ const c = {
     },
     flavorSection: { marginBottom: "10px", padding: "10px 10px 8px", backgroundColor: "#fafafa", border: "1.5px solid #e8e8e8", borderRadius: "10px" },
     flavorTitle: { fontFamily: "'Public Sans', sans-serif", fontWeight: "900", fontSize: "9px", letterSpacing: "1px", margin: "0 0 7px", transition: "color 0.2s" },
-    flavorGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(60px, 1fr))", gap: "5px" },
+    // ── FIX: removed whiteSpace: "nowrap" and overflow: "hidden", added lineHeight ──
+    flavorGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(80px, 1fr))", gap: "5px" },
     flavorBtn: {
-        display: "flex", alignItems: "center", gap: "4px", padding: "5px 8px", borderRadius: "6px",
+        display: "flex", alignItems: "center", gap: "4px", padding: "5px 6px", borderRadius: "6px",
         fontFamily: "'Public Sans', sans-serif", fontSize: "10px", letterSpacing: "0.3px",
-        cursor: "pointer", transition: "all 0.15s", textAlign: "left", whiteSpace: "nowrap", overflow: "hidden",
+        cursor: "pointer", transition: "all 0.15s", textAlign: "left",
+        lineHeight: "1.3", flexShrink: 0,
     },
     selectedFlavorChip: {
         display: "inline-flex", alignItems: "center", gap: "6px", marginTop: "8px", padding: "4px 10px",
@@ -682,10 +672,9 @@ const g = {
     hint: { fontFamily: "'Public Sans', sans-serif", fontSize: "11px", color: "#bbb", margin: 0, fontWeight: "700" },
 };
 
-/* ── Mobile FAB ── */
 const fab = {
     btn: {
-        display: "none", /* shown via CSS class on mobile */
+        display: "none",
         position: "fixed",
         bottom: "20px",
         left: "50%",
@@ -720,7 +709,6 @@ const fab = {
     },
 };
 
-/* ── Bottom drawer ── */
 const d = {
     backdrop: {
         position: "fixed",
@@ -740,7 +728,6 @@ const d = {
         borderRadius: "16px 16px 0 0",
         display: "flex",
         flexDirection: "column",
-        /* Take up to 85% of screen height */
         maxHeight: "85vh",
         overflowY: "hidden",
         transition: "transform 0.35s cubic-bezier(0.32, 0.72, 0, 1)",
