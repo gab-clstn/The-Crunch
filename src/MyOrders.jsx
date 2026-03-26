@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "./Auth_Context";
 import { useCart } from "./Cart_Context";
 import { subscribeToUserOrders } from "./Orders_Service";
+import { useNotifications } from "./useNotifications";
 
 const PH = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60'%3E%3Crect width='60' height='60' fill='%23f0f0f0'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='10' fill='%23aaa'%3E?%3C/text%3E%3C/svg%3E";
 
@@ -28,6 +29,9 @@ const MyOrders = () => {
     const [loading, setLoading] = useState(true);
     const [expandedId, setExpandedId] = useState(null);
     const [indexError, setIndexError] = useState(false);
+
+    // 🔔 Real-time order status notifications
+    useNotifications({ userId: currentUser?.uid, role: "customer" });
 
     useEffect(() => {
         if (!currentUser) { navigate("/auth"); return; }

@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { getProducts, addProduct, updateProduct, deleteProduct } from "./Product_Service";
 import { subscribeToAllOrders, updateOrderStatus } from "./Orders_Service";
 import { updateAdminPasscode } from "./Auth_Service";
+import { useNotifications } from "./useNotifications";
 
 const PH = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60'%3E%3Crect width='60' height='60' fill='%23f0f0f0'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='10' fill='%23aaa'%3E?%3C/text%3E%3C/svg%3E";
 
@@ -365,6 +366,9 @@ const AdminPanel = () => {
     const [editingId, setEditingId] = useState(null);
     const [loading, setLoading] = useState(false);
     const [uploadError, setUploadError] = useState("");
+
+    // 🔔 Real-time new-order notifications for admin
+    useNotifications({ userId: "admin", role: "admin" });
 
     useEffect(() => {
         if (!authLoading && !isAdmin) navigate("/");
