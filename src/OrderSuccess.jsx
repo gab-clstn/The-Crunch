@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useAuth } from "./Auth_Context";
 
 const OrderSuccess = () => {
     const navigate = useNavigate();
     const { state } = useLocation();
+    const { currentUser } = useAuth();
     const [visible, setVisible] = useState(false);
 
     useEffect(() => {
@@ -15,7 +17,7 @@ const OrderSuccess = () => {
     }, []);
 
     const { orderId, total, orderType, itemCount } = state || {};
-
+    const customerName = currentUser?.displayName || null;
     const orderTypeIcon = { "Dine In": "🍽️", "Pick-Up": "🏃", "Delivery": "🛵" }[orderType] || "🛒";
     const orderTypeMessage = {
         "Dine In": "Will be served at your table.",
@@ -60,6 +62,12 @@ const OrderSuccess = () => {
 
                 {/* Order details */}
                 <div style={s.rows}>
+                    {customerName && (
+                        <div style={s.row}>
+                            <span style={s.rowLabel}>CUSTOMER</span>
+                            <span style={s.rowVal}>{customerName}</span>
+                        </div>
+                    )}
                     {orderId && (
                         <div style={s.row}>
                             <span style={s.rowLabel}>ORDER #</span>
@@ -158,7 +166,6 @@ const s = {
         position: "relative",
     },
 
-    /* Tear edges */
     tearTop: {
         width: "100%",
         height: "16px",
