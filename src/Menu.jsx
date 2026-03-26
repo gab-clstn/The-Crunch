@@ -29,8 +29,7 @@ const needsFlavor = (product) => {
 const ProductCard = ({ product, selectedId, setSelectedId, isLoggedIn }) => {
     const { name, price, description, imageUrl, available } = product;
     const { addToCart } = useCart();
-    const navigate = useNavigate();
-    const [qty, setQty] = useState(0);
+    const [qty, setQty] = useState(1);
     const [added, setAdded] = useState(false);
     const [hovered, setHovered] = useState(false);
     const [selectedFlavor, setSelectedFlavor] = useState(null);
@@ -38,11 +37,12 @@ const ProductCard = ({ product, selectedId, setSelectedId, isLoggedIn }) => {
 
     const selected = selectedId === product.id;
     const requiresFlavor = needsFlavor(product);
+    const canAdd = !requiresFlavor || !!selectedFlavor;
 
     const imageSrc = imageUrl || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='200'%3E%3Crect width='300' height='200' fill='%23f0f0f0'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='14' fill='%23aaa'%3ENo Image%3C/text%3E%3C/svg%3E";
 
-    const handleAdd = () => {
-        if (qty === 0) return;
+    const handleAdd = (e) => {
+        e.stopPropagation();
         if (requiresFlavor && !selectedFlavor) {
             setFlavorError(true);
             setTimeout(() => setFlavorError(false), 1800);
@@ -54,7 +54,7 @@ const ProductCard = ({ product, selectedId, setSelectedId, isLoggedIn }) => {
         for (let i = 0; i < qty; i++) addToCart(productWithFlavor);
         setAdded(true);
         setTimeout(() => setAdded(false), 1200);
-        setQty(0);
+        setQty(1);
         setSelectedFlavor(null);
     };
 
@@ -72,9 +72,14 @@ const ProductCard = ({ product, selectedId, setSelectedId, isLoggedIn }) => {
             onMouseEnter={() => setHovered(true)}
             onMouseLeave={() => setHovered(false)}
         >
+            {/* Image */}
             <div style={c.imgWrap}>
-                <img src={imageSrc} alt={name} style={c.img}
-                    onError={e => { e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='200'%3E%3Crect width='300' height='200' fill='%23f0f0f0'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='14' fill='%23aaa'%3ENo Image%3C/text%3E%3C/svg%3E"; }} />
+                <img
+                    src={imageSrc}
+                    alt={name}
+                    style={c.img}
+                    onError={e => { e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='200'%3E%3Crect width='300' height='200' fill='%23f0f0f0'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='14' fill='%23aaa'%3ENo Image%3C/text%3E%3C/svg%3E"; }}
+                />
                 {!available && <div style={c.soldBanner}>SOLD OUT</div>}
                 {requiresFlavor && available && <div style={c.flavorTag}>🍗 CHOOSE FLAVOR</div>}
             </div>
@@ -83,6 +88,7 @@ const ProductCard = ({ product, selectedId, setSelectedId, isLoggedIn }) => {
                 <p style={c.cardName}>{name}</p>
                 <p style={c.cardDesc}>{description}</p>
 
+                {/* Flavor picker — only for items that need it, only when logged in & available */}
                 {isLoggedIn && available && requiresFlavor && (
                     <div style={c.flavorSection} onClick={e => e.stopPropagation()}>
                         <p style={{ ...c.flavorTitle, color: flavorError ? "#e74c3c" : "#888" }}>
@@ -92,65 +98,69 @@ const ProductCard = ({ product, selectedId, setSelectedId, isLoggedIn }) => {
                             {FLAVORS.map(f => {
                                 const isSelected = selectedFlavor === f.label;
                                 return (
-                                    <button key={f.label} style={{
-                                        ...c.flavorBtn,
-                                        backgroundColor: isSelected ? f.color : "#f5f5f5",
-                                        color: isSelected ? (f.light ? "#fff" : "#1A1A1A") : "#555",
-                                        border: isSelected ? `2px solid ${f.light ? "rgba(255,255,255,0.4)" : "#1A1A1A"}` : "2px solid #e0e0e0",
-                                        boxShadow: isSelected ? "2px 2px 0 rgba(0,0,0,0.15)" : "none",
-                                        transform: isSelected ? "scale(1.04)" : "scale(1)",
-                                        fontWeight: isSelected ? "900" : "700",
-                                    }}
-                                        onClick={() => { setSelectedFlavor(isSelected ? null : f.label); setFlavorError(false); }}>
+                                    <button
+                                        key={f.label}
+                                        style={{
+                                            ...c.flavorBtn,
+                                            backgroundColor: isSelected ? f.color : "#f5f5f5",
+                                            color: isSelected ? (f.light ? "#fff" : "#1A1A1A") : "#555",
+                                            border: isSelected ? `2px solid ${f.light ? "rgba(255,255,255,0.4)" : "#1A1A1A"}` : "2px solid #e0e0e0",
+                                            boxShadow: isSelected ? "2px 2px 0 rgba(0,0,0,0.15)" : "none",
+                                            transform: isSelected ? "scale(1.04)" : "scale(1)",
+                                            fontWeight: isSelected ? "900" : "700",
+                                        }}
+                                        onClick={() => { setSelectedFlavor(isSelected ? null : f.label); setFlavorError(false); }}
+                                    >
                                         <span style={{ fontSize: "11px", flexShrink: 0 }}>{f.icon}</span>
                                         {f.label}
                                     </button>
                                 );
                             })}
                         </div>
+
+                        {/* Selected flavor chip */}
+                        {selectedFlavor && (
+                            <div style={c.selectedFlavorChip}>
+                                <span style={{ fontFamily: "'Public Sans', sans-serif", fontWeight: "700", fontSize: "11px" }}>
+                                    {FLAVORS.find(f => f.label === selectedFlavor)?.icon} {selectedFlavor}
+                                </span>
+                                <button style={c.chipClear} onClick={() => setSelectedFlavor(null)}>✕</button>
+                            </div>
+                        )}
                     </div>
                 )}
 
+                {/* ── Footer: price left, qty + Add to Cart right ── */}
                 <div style={c.cardFooter}>
                     <span style={c.cardPrice}>₱{price}</span>
+
                     {!available && <span style={c.soldTag}>SOLD OUT</span>}
+
                     {isLoggedIn && available && (
-                        qty === 0 ? (
-                            <button style={{
-                                ...c.addToCartBtn,
-                                borderColor: (requiresFlavor && !selectedFlavor) ? "#ccc" : "#27ae60",
-                                color: (requiresFlavor && !selectedFlavor) ? "#bbb" : "#27ae60",
-                            }} onClick={e => { e.stopPropagation(); setQty(1); }}>
-                                {added ? "✓ Added" : "Add to Cart"}
-                            </button>
-                        ) : (
-                            <div style={c.qtyRow} onClick={e => e.stopPropagation()}>
-                                <div style={c.qtyBox}>
-                                    <button style={c.qtyBtn} onClick={() => setQty(q => Math.max(0, q - 1))}>−</button>
-                                    <span style={c.qtyNum}>{qty}</span>
-                                    <button style={c.qtyBtn} onClick={() => setQty(q => q + 1)}>+</button>
-                                </div>
-                                <button style={{
-                                    ...c.addBtn,
-                                    backgroundColor: added ? "#27ae60" : (requiresFlavor && !selectedFlavor) ? "#f0f0f0" : "#fff",
-                                    color: added ? "#fff" : (requiresFlavor && !selectedFlavor) ? "#ccc" : "#27ae60",
-                                    borderColor: (requiresFlavor && !selectedFlavor) ? "#ccc" : "#27ae60",
-                                }} onClick={handleAdd}>
-                                    {added ? "✓" : "+ Add"}
-                                </button>
+                        <div style={c.rightControls} onClick={e => e.stopPropagation()}>
+                            {/* Qty stepper */}
+                            <div style={c.qtyBox}>
+                                <button style={c.qtyBtn} onClick={e => { e.stopPropagation(); setQty(q => Math.max(1, q - 1)); }}>−</button>
+                                <span style={c.qtyNum}>{qty}</span>
+                                <button style={c.qtyBtn} onClick={e => { e.stopPropagation(); setQty(q => q + 1); }}>+</button>
                             </div>
-                        )
+
+                            {/* Add to Cart */}
+                            <button
+                                style={{
+                                    ...c.addToCartBtn,
+                                    backgroundColor: added ? "#27ae60" : canAdd ? "#27ae60" : "#f0f0f0",
+                                    color: added ? "#fff" : canAdd ? "#fff" : "#bbb",
+                                    borderColor: canAdd ? "#27ae60" : "#e0e0e0",
+                                    cursor: canAdd ? "pointer" : "default",
+                                }}
+                                onClick={handleAdd}
+                            >
+                                {added ? "✓ Added!" : "Add to Cart"}
+                            </button>
+                        </div>
                     )}
                 </div>
-
-                {isLoggedIn && available && requiresFlavor && selectedFlavor && (
-                    <div style={c.selectedFlavorChip} onClick={e => e.stopPropagation()}>
-                        <span style={{ fontFamily: "'Public Sans', sans-serif", fontWeight: "700", fontSize: "11px" }}>
-                            {FLAVORS.find(f => f.label === selectedFlavor)?.icon} {selectedFlavor}
-                        </span>
-                        <button style={c.chipClear} onClick={() => setSelectedFlavor(null)}>✕</button>
-                    </div>
-                )}
             </div>
         </div>
     );
@@ -159,6 +169,7 @@ const ProductCard = ({ product, selectedId, setSelectedId, isLoggedIn }) => {
 /* ─── Order Panel content (shared between sidebar & drawer) ─── */
 const OrderPanelContent = ({ onClose }) => {
     const { cartItems, removeFromCart } = useCart();
+    const { currentUser } = useAuth();
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState("Dine In");
     const [deliveryAddress, setDeliveryAddress] = useState("");
@@ -178,6 +189,7 @@ const OrderPanelContent = ({ onClose }) => {
                 deliveryAddress: activeTab === "Delivery" ? deliveryAddress : "",
                 subtotal,
                 total: activeTab === "Delivery" ? total + 50 : total,
+                customerName: currentUser?.displayName || currentUser?.email || "Guest",
             }
         });
     };
@@ -217,8 +229,13 @@ const OrderPanelContent = ({ onClose }) => {
             {activeTab === "Delivery" && (
                 <div style={p.deliveryBox}>
                     <label style={p.deliveryLabel}>DELIVERY ADDRESS</label>
-                    <input style={p.deliveryInput} type="text" placeholder="Enter your full address..."
-                        value={deliveryAddress} onChange={(e) => setDeliveryAddress(e.target.value)} />
+                    <input
+                        style={p.deliveryInput}
+                        type="text"
+                        placeholder="Enter your full address..."
+                        value={deliveryAddress}
+                        onChange={(e) => setDeliveryAddress(e.target.value)}
+                    />
                 </div>
             )}
 
@@ -234,7 +251,8 @@ const OrderPanelContent = ({ onClose }) => {
                         <div key={item.id} style={p.item}>
                             <img
                                 src={(typeof imageMap !== "undefined" && imageMap[item.name]) ? imageMap[item.name] : item.imageUrl || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='200'%3E%3Crect width='300' height='200' fill='%23f0f0f0'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='14' fill='%23aaa'%3ENo Image%3C/text%3E%3C/svg%3E"}
-                                alt={item.name} style={p.itemImg}
+                                alt={item.name}
+                                style={p.itemImg}
                                 onError={e => { e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='200'%3E%3Crect width='300' height='200' fill='%23f0f0f0'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='14' fill='%23aaa'%3ENo Image%3C/text%3E%3C/svg%3E"; }}
                             />
                             <div style={p.itemInfo}>
@@ -291,9 +309,7 @@ const OrderPanel = () => (
 
 /* ─── Mobile bottom drawer ─── */
 const MobileOrderDrawer = ({ isOpen, onClose, isLoggedIn }) => {
-    const { cartItems } = useCart();
     const navigate = useNavigate();
-    const itemCount = cartItems.reduce((s, i) => s + i.qty, 0);
 
     if (!isLoggedIn) {
         return (
@@ -437,8 +453,11 @@ const Menu = () => {
                     <div className="menu-left-pane" style={m.leftPane}>
                         <div style={m.catBar}>
                             {allCategories.map((cat) => (
-                                <button key={cat} style={{ ...m.catPill, ...(activeCategory === cat ? m.catPillActive : {}) }}
-                                    onClick={() => setActiveCategory(cat)}>
+                                <button
+                                    key={cat}
+                                    style={{ ...m.catPill, ...(activeCategory === cat ? m.catPillActive : {}) }}
+                                    onClick={() => setActiveCategory(cat)}
+                                >
                                     {cat}
                                     {cat !== "All" && grouped[cat] && (
                                         <span style={{ ...m.catCount, ...(activeCategory === cat ? m.catCountActive : {}) }}>
@@ -461,14 +480,18 @@ const Menu = () => {
                                         ...m.grid,
                                         gridTemplateColumns:
                                             window.innerWidth < 640 ? "1fr" :
-                                            items.length === 1 ? "minmax(0, 300px)" :
-                                            items.length === 2 ? "repeat(2, 1fr)" :
-                                            "repeat(auto-fit, minmax(280px, 1fr))",
+                                                items.length === 1 ? "minmax(0, 300px)" :
+                                                    items.length === 2 ? "repeat(2, 1fr)" :
+                                                        "repeat(auto-fit, minmax(280px, 1fr))",
                                     }}>
                                         {items.map((product) => (
-                                            <ProductCard key={product.id} product={product}
-                                                selectedId={selectedId} setSelectedId={setSelectedId}
-                                                isLoggedIn={isLoggedIn} />
+                                            <ProductCard
+                                                key={product.id}
+                                                product={product}
+                                                selectedId={selectedId}
+                                                setSelectedId={setSelectedId}
+                                                isLoggedIn={isLoggedIn}
+                                            />
                                         ))}
                                     </div>
                                 </div>
@@ -577,7 +600,6 @@ const c = {
     },
     flavorSection: { marginBottom: "10px", padding: "10px 10px 8px", backgroundColor: "#fafafa", border: "1.5px solid #e8e8e8", borderRadius: "10px" },
     flavorTitle: { fontFamily: "'Public Sans', sans-serif", fontWeight: "900", fontSize: "9px", letterSpacing: "1px", margin: "0 0 7px", transition: "color 0.2s" },
-    // ── FIX: removed whiteSpace: "nowrap" and overflow: "hidden", added lineHeight ──
     flavorGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(80px, 1fr))", gap: "5px" },
     flavorBtn: {
         display: "flex", alignItems: "center", gap: "4px", padding: "5px 6px", borderRadius: "6px",
@@ -590,20 +612,18 @@ const c = {
         backgroundColor: "#e8f5e9", border: "1.5px solid #27ae60", borderRadius: "999px", alignSelf: "flex-start",
     },
     chipClear: { background: "none", border: "none", cursor: "pointer", fontFamily: "'Public Sans', sans-serif", fontWeight: "900", fontSize: "10px", color: "#27ae60", padding: 0, lineHeight: 1 },
-    cardFooter: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px", marginTop: "auto" },
+    cardFooter: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px", marginTop: "auto", paddingTop: "10px" },
     cardPrice: { fontFamily: "'Oswald', sans-serif", fontSize: "18px", fontWeight: "900", color: "#27ae60" },
-    addToCartBtn: {
-        backgroundColor: "#fff", border: "1.5px solid #27ae60", color: "#27ae60",
-        borderRadius: "8px", padding: "7px 14px",
-        fontFamily: "'Public Sans', sans-serif", fontWeight: "900", fontSize: "12px",
-        cursor: "pointer", letterSpacing: "0.3px", transition: "all 0.15s",
-    },
     soldTag: { fontFamily: "'Public Sans', sans-serif", fontSize: "11px", fontWeight: "900", color: "#e74c3c", letterSpacing: "0.5px", border: "1.5px solid #e74c3c", borderRadius: "6px", padding: "4px 10px" },
-    qtyRow: { display: "flex", alignItems: "center", gap: "6px" },
+    rightControls: { display: "flex", alignItems: "center", gap: "6px" },
     qtyBox: { display: "flex", alignItems: "center", backgroundColor: "#f0faf4", borderRadius: "999px", border: "1.5px solid #27ae60", overflow: "hidden", padding: "2px 4px" },
-    qtyBtn: { backgroundColor: "transparent", border: "none", width: "26px", height: "26px", fontSize: "16px", fontWeight: "900", cursor: "pointer", color: "#27ae60", fontFamily: "'Oswald', sans-serif", lineHeight: 1, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "50%" },
-    qtyNum: { fontFamily: "'Oswald', sans-serif", fontSize: "14px", fontWeight: "900", width: "22px", textAlign: "center", color: "#1A1A1A" },
-    addBtn: { border: "1.5px solid #27ae60", borderRadius: "8px", padding: "6px 10px", fontFamily: "'Public Sans', sans-serif", fontWeight: "900", fontSize: "11px", cursor: "pointer", transition: "all 0.15s", whiteSpace: "nowrap" },
+    qtyBtn: { backgroundColor: "transparent", border: "none", width: "24px", height: "24px", fontSize: "15px", fontWeight: "900", cursor: "pointer", color: "#27ae60", fontFamily: "'Oswald', sans-serif", lineHeight: 1, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "50%" },
+    qtyNum: { fontFamily: "'Oswald', sans-serif", fontSize: "13px", fontWeight: "900", width: "20px", textAlign: "center", color: "#1A1A1A" },
+    addToCartBtn: {
+        border: "1.5px solid #27ae60", borderRadius: "8px", padding: "6px 11px",
+        fontFamily: "'Public Sans', sans-serif", fontWeight: "900", fontSize: "11px",
+        letterSpacing: "0.3px", transition: "all 0.15s", whiteSpace: "nowrap",
+    },
 };
 
 const p = {
@@ -674,84 +694,40 @@ const g = {
 
 const fab = {
     btn: {
-        display: "none",
-        position: "fixed",
-        bottom: "20px",
-        left: "50%",
-        transform: "translateX(-50%)",
-        zIndex: 1000,
-        alignItems: "center",
-        gap: "8px",
-        padding: "14px 28px",
-        backgroundColor: "#FFC72C",
-        border: "3px solid #1A1A1A",
-        boxShadow: "4px 4px 0 #1A1A1A",
-        fontFamily: "'Oswald', sans-serif",
-        fontWeight: "900",
-        fontSize: "16px",
-        letterSpacing: "1px",
-        color: "#1A1A1A",
-        cursor: "pointer",
-        whiteSpace: "nowrap",
+        display: "none", position: "fixed", bottom: "20px", left: "50%", transform: "translateX(-50%)",
+        zIndex: 1000, alignItems: "center", gap: "8px", padding: "14px 28px",
+        backgroundColor: "#FFC72C", border: "3px solid #1A1A1A", boxShadow: "4px 4px 0 #1A1A1A",
+        fontFamily: "'Oswald', sans-serif", fontWeight: "900", fontSize: "16px",
+        letterSpacing: "1px", color: "#1A1A1A", cursor: "pointer", whiteSpace: "nowrap",
     },
     icon: { fontSize: "18px" },
     label: {},
     badge: {
-        backgroundColor: "#1A1A1A",
-        color: "#FFC72C",
-        fontFamily: "'Oswald', sans-serif",
-        fontWeight: "900",
-        fontSize: "12px",
-        padding: "1px 7px",
-        borderRadius: "999px",
-        minWidth: "20px",
-        textAlign: "center",
+        backgroundColor: "#1A1A1A", color: "#FFC72C", fontFamily: "'Oswald', sans-serif",
+        fontWeight: "900", fontSize: "12px", padding: "1px 7px", borderRadius: "999px",
+        minWidth: "20px", textAlign: "center",
     },
 };
 
 const d = {
     backdrop: {
-        position: "fixed",
-        inset: 0,
-        backgroundColor: "rgba(0,0,0,0.5)",
-        zIndex: 1001,
-        transition: "opacity 0.3s ease",
+        position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.5)",
+        zIndex: 1001, transition: "opacity 0.3s ease",
     },
     drawer: {
-        position: "fixed",
-        bottom: 0,
-        left: 0,
-        right: 0,
-        zIndex: 1002,
-        backgroundColor: "#fff",
-        borderTop: "3px solid #1A1A1A",
-        borderRadius: "16px 16px 0 0",
-        display: "flex",
-        flexDirection: "column",
-        maxHeight: "85vh",
-        overflowY: "hidden",
+        position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 1002,
+        backgroundColor: "#fff", borderTop: "3px solid #1A1A1A", borderRadius: "16px 16px 0 0",
+        display: "flex", flexDirection: "column", maxHeight: "85vh", overflowY: "hidden",
         transition: "transform 0.35s cubic-bezier(0.32, 0.72, 0, 1)",
     },
     dragHandle: {
-        width: "40px",
-        height: "4px",
-        backgroundColor: "#ccc",
-        borderRadius: "2px",
-        margin: "12px auto 4px",
-        flexShrink: 0,
+        width: "40px", height: "4px", backgroundColor: "#ccc", borderRadius: "2px",
+        margin: "12px auto 4px", flexShrink: 0,
     },
     closeBtn: {
-        margin: "0 20px 16px",
-        padding: "12px",
-        border: "2px solid #1A1A1A",
-        background: "none",
-        fontFamily: "'Oswald', sans-serif",
-        fontWeight: "900",
-        fontSize: "13px",
-        letterSpacing: "1px",
-        cursor: "pointer",
-        color: "#888",
-        flexShrink: 0,
+        margin: "0 20px 16px", padding: "12px", border: "2px solid #1A1A1A", background: "none",
+        fontFamily: "'Oswald', sans-serif", fontWeight: "900", fontSize: "13px",
+        letterSpacing: "1px", cursor: "pointer", color: "#888", flexShrink: 0,
     },
 };
 
