@@ -320,8 +320,8 @@ jobs:
       # ── Give Railway a few seconds to spin up then confirm it's live
       - name: Health check Railway API
         run: |
-          sleep 15
-          curl --fail ${{ secrets.VITE_API_URL }}/health || (echo "Railway health check failed" && exit 1)
+          sleep 30
+          curl -f -L -v ${{ secrets.VITE_API_URL }}/health || (echo "Railway health check failed" && exit 1)
 
       # ── Notify on success
       - name: Summarize backend deployment
@@ -367,7 +367,7 @@ jobs:
           git fetch origin main
           git checkout main
           # Merge only if there are no conflicts
-          git merge staging --no-ff -m "auto: promote staging to main [skip ci]"
+          git merge staging --no-ff -m "Auto: Promote Staging to Main"
           
           git push origin main
           

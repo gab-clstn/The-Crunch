@@ -51,7 +51,8 @@ const io = new Server(httpServer, {
     origin: [
       "http://localhost:5173",
       "https://the-crunch-4735e.web.app",
-      "https://the-crunch-4735e.firebaseapp.com"
+      "https://the-crunch-4735e.firebaseapp.com",
+      "http://the-crunch.up.railway.app" 
     ],
     methods: ["GET", "POST"],
     credentials: true

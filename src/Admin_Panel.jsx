@@ -370,15 +370,19 @@ const AdminPanel = () => {
     // 🔔 Real-time new-order notifications for admin
     useNotifications({ userId: "admin", role: "admin" });
 
+    // ✅ 1. MOVE THE DEFINITION HERE (ABOVE THE USEEFFECT)
+    const loadProducts = async () => {
+        const data = await getProducts();
+        setProducts(data);
+    };
+
     useEffect(() => {
         if (!authLoading && !isAdmin) navigate("/");
     }, [isAdmin, authLoading, navigate]);
 
-    useEffect(() => { loadProducts(); }, [loadProducts]);
-
-    const loadProducts = (async () => {
-        const data = await getProducts();
-        setProducts(data);
+    // ✅ 2. NOW THIS CAN SAFELY ACCESS loadProducts
+    useEffect(() => { 
+        loadProducts(); 
     }, []);
 
     const handleImageUpload = (e) => {
