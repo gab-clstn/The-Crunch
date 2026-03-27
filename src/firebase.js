@@ -1,4 +1,4 @@
-// src/services/firebase.js
+// src/firebase.js
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
 import { getAuth } from "firebase/auth";
@@ -6,14 +6,24 @@ import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
 const firebaseConfig = {
-    apiKey: "AIzaSyDvsppvc7diomW206gVezO3Udn-wM_5SZs",
-    authDomain: "the-crunch-4735e.firebaseapp.com",
-    projectId: "the-crunch-4735e",
-    storageBucket: "the-crunch-4735e.firebasestorage.app",
-    messagingSenderId: "533787752209",
-    appId: "1:533787752209:web:73bdce3fb11051a95cbeb0",
-    measurementId: "G-K8Q2MMK65N"
+    apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+    appId: import.meta.env.VITE_FIREBASE_APP_ID,
+    measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
 };
+
+// Warn in dev if any config value is missing
+if (import.meta.env.DEV) {
+    const missing = Object.entries(firebaseConfig)
+        .filter(([, v]) => !v)
+        .map(([k]) => k);
+    if (missing.length) {
+        console.warn('[Firebase] Missing env variables:', missing);
+    }
+}
 
 const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);

@@ -60,6 +60,7 @@ const ProductCard = ({ product, selectedId, setSelectedId, isLoggedIn }) => {
 
     return (
         <div
+            className="menu-card"
             style={{
                 ...c.card,
                 opacity: available ? 1 : 0.6,

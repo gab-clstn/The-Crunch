@@ -1,4 +1,5 @@
 import express from "express";
+import cors from "cors";
 import { createServer } from "http";
 import { Server } from "socket.io";
 import { initializeApp, cert } from "firebase-admin/app";
@@ -30,14 +31,28 @@ initializeApp({ credential: cert(serviceAccount) });
 const db = getFirestore();
 
 const app = express();
+const allowedOrigins = [
+  "http://localhost:5173",
+  "https://the-crunch-4735e.web.app",
+  "https://the-crunch-4735e.firebaseapp.com"
+];
+
+app.use(cors({
+  origin: allowedOrigins,
+  credentials: true
+}));
 const httpServer = createServer(app);
 
 const io = new Server(httpServer, {
   cors: {
-    origin: "*",
+    origin: [
+      "http://localhost:5173",
+      "https://the-crunch-4735e.web.app",
+      "https://the-crunch-4735e.firebaseapp.com"
+    ],
     methods: ["GET", "POST"],
-  },
-  transports: ["websocket", "polling"],
+    credentials: true
+  }
 });
 
 app.use(express.json());
