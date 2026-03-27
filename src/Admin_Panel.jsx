@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "./Auth_Context";
 import { useNavigate } from "react-router-dom";
 import { getProducts, addProduct, updateProduct, deleteProduct } from "./Product_Service";

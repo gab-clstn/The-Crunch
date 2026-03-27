@@ -51,7 +51,7 @@ export function uploadPlugin() {
                         fs.mkdirSync(destDir, { recursive: true });
                         fs.copyFileSync(file.path, destPath);
 
-                        try { fs.unlinkSync(file.path); } catch (_) {}
+                        try { fs.unlinkSync(file.path); } catch (__) {}
 
                         // ✅ Vite serves src/ files at /src/... in dev mode
                         const publicUrl = `/src/assets/images/${fileName}`;

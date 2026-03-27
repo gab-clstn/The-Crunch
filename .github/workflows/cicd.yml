@@ -14,6 +14,9 @@ on:
       - main
       - staging     # lint + test only, no deploy
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   # ─────────────────────────────────────────────
   # JOB 1 — Lint & Test (runs on every push/PR)
@@ -299,7 +302,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: 'npm'
 
       - name: Install Railway CLI
@@ -307,15 +310,14 @@ jobs:
 
       # ── Push the server/ folder to Railway
       - name: Deploy to Railway
-        run: railway up --service ${{ secrets.RAILWAY_SERVICE_ID }}
+        run: railway up --service ${{ secrets.RAILWAY_SERVICE_ID }} --path ./server
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-          FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
       # ── Give Railway a few seconds to spin up then confirm it's live
       - name: Health check Railway API
         run: |
-          sleep 10
+          sleep 15
           curl --fail ${{ secrets.VITE_API_URL }}/health || (echo "Railway health check failed" && exit 1)
 
       # ── Notify on success

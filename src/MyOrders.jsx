@@ -52,7 +52,7 @@ const MyOrders = () => {
             }
         );
         return () => unsubscribe();
-    }, [currentUser]);
+    }, [currentUser, navigate]);
 
     const handleReorder = (order) => {
         clearCart();

@@ -1,8 +1,4 @@
-// tests/visual.spec.js
-// Visual regression tests for The Crunch
-// These tests screenshot key pages and compare them against baselines.
-// Run: npx playwright test tests/visual.spec.js
-// Update baselines: npx playwright test --update-snapshots
+/* global process */
 
 import { test, expect } from '@playwright/test';
 
