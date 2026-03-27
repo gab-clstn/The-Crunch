@@ -52,7 +52,7 @@ export function uploadPlugin() {
                         fs.copyFileSync(file.path, destPath);
 
                         // Optional catch binding (ES2019) — temp file cleanup is best-effort
-                        try { fs.unlinkSync(file.path); } catch { }
+                        try { fs.unlinkSync(file.path); } catch { /* best-effort cleanup */ }
 
                         // ✅ Vite serves src/ files at /src/... in dev mode
                         const publicUrl = `/src/assets/images/${fileName}`;
