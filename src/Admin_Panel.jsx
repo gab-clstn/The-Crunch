@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "./Auth_Context";
 import { useNavigate } from "react-router-dom";
 import { getProducts, addProduct, updateProduct, deleteProduct } from "./Product_Service";
@@ -176,7 +176,7 @@ const OrdersTab = () => {
             setLoading(false);
         });
         return () => unsubscribe();
-    }, [navigate]);
+    }, []);
 
     const handleStatusChange = async (orderId, newStatus) => {
         setUpdating(orderId);
@@ -372,14 +372,14 @@ const AdminPanel = () => {
 
     useEffect(() => {
         if (!authLoading && !isAdmin) navigate("/");
-    }, [isAdmin, authLoading]);
+    }, [isAdmin, authLoading, navigate]);
 
-    useEffect(() => { loadProducts(); }, [navigate]);
+    useEffect(() => { loadProducts(); }, [loadProducts]);
 
-    const loadProducts = async () => {
+    const loadProducts = (async () => {
         const data = await getProducts();
         setProducts(data);
-    };
+    }, []);
 
     const handleImageUpload = (e) => {
         const file = e.target.files[0];

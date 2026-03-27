@@ -310,6 +310,7 @@ jobs:
         run: railway up --service ${{ secrets.RAILWAY_SERVICE_ID }}
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
       # ── Give Railway a few seconds to spin up then confirm it's live
       - name: Health check Railway API

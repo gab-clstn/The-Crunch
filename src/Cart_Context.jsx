@@ -1,6 +1,9 @@
+// Cart_Context.jsx — exports ONLY the CartProvider component.
+// FIX: useCart hook has been moved to useCart.js so this file exports
+// only a component, satisfying Vite's fast-refresh constraint.
 import React, { createContext, useContext, useState } from "react";
 
-const CartContext = createContext();
+export const CartContext = createContext();
 
 export const CartProvider = ({ children }) => {
     const [cartItems, setCartItems] = useState([]);
@@ -28,7 +31,6 @@ export const CartProvider = ({ children }) => {
         }
     };
 
-    // ← This was missing, Order Panel's ✕ button needs it
     const removeFromCart = (id) => {
         setCartItems(prev => prev.filter(item => item.id !== id));
     };
@@ -41,5 +43,3 @@ export const CartProvider = ({ children }) => {
         </CartContext.Provider>
     );
 };
-
-export const useCart = () => useContext(CartContext);

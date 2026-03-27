@@ -19,69 +19,31 @@ const useCountUp = (target, duration = 1200) => {
     return count;
 };
 
-// ── Marquee ticker ─────────────────────────────────────────────────────────
-const Ticker = () => {
-    const items = ["CRISPY", "BOLD", "BONELESS", "DOUBLE-CRUNCH", "FRESHLY FRIED", "MAXIMUM FLAVOR", "THE CRUNCH"];
-    return (
-        <div style={ticker.wrapper}>
-            <div style={ticker.track}>
-                {[...items, ...items].map((item, i) => (
-                    <span key={i} style={ticker.item}>
-                        {item} <span style={ticker.dot}>✦</span>
-                    </span>
-                ))}
-            </div>
-            <style>{`
-                @keyframes marquee { from { transform: translateX(0) } to { transform: translateX(-50%) } }
-                .marquee-track { animation: marquee 18s linear infinite; }
-                @keyframes fadeUp { from { opacity:0; transform:translateY(30px) } to { opacity:1; transform:translateY(0) } }
-                .fade-up { animation: fadeUp 0.6s ease forwards; }
-                @keyframes pulse { 0%,100% { transform: scale(1) } 50% { transform: scale(1.04) } }
-                .btn-pulse:hover { animation: pulse 0.4s ease; }
-                @keyframes shimmer { from { background-position: -200% center } to { background-position: 200% center } }
-                .card-hover { transition: transform 0.2s ease, box-shadow 0.2s ease; }
-                .card-hover:hover { transform: translateY(-6px); box-shadow: 12px 16px 0px #1A1A1A !important; }
-            `}</style>
-        </div>
-    );
-};
-const ticker = {
-    wrapper: { backgroundColor: "#1A1A1A", overflow: "hidden", borderTop: "3px solid #FFC72C", borderBottom: "3px solid #FFC72C", padding: "12px 0" },
-    track: { display: "flex", whiteSpace: "nowrap", width: "max-content" },
-    item: { fontFamily: "'Oswald', sans-serif", color: "#FFC72C", fontSize: "15px", fontWeight: "700", letterSpacing: "2px", padding: "0 30px" },
-    dot: { color: "#fff", margin: "0 10px" },
-};
-// attach animation class imperatively since inline styles can't do it
-const TickerTrack = () => {
-    return (
-        <div style={ticker.wrapper}>
-            <div className="marquee-track" style={ticker.track}>
-                {[..."CRISPY✦BOLD✦BONELESS✦DOUBLE-CRUNCH✦FRESHLY FRIED✦MAXIMUM FLAVOR✦THE CRUNCH✦CRISPY✦BOLD✦BONELESS✦DOUBLE-CRUNCH✦FRESHLY FRIED✦MAXIMUM FLAVOR✦THE CRUNCH✦".split("✦")].map((item, i) => (
-                    <span key={i} style={ticker.item}>{item} <span style={ticker.dot}>✦</span></span>
-                ))}
-            </div>
-        </div>
-    );
-};
-
 // ── Stats bar ──────────────────────────────────────────────────────────────
-const stats = [
+// FIX: Each stat gets its own component so useCountUp is called at the top
+// level of a component, not inside a .map() callback (Rules of Hooks).
+const statData = [
     { value: 12, suffix: "+", label: "Signature Flavors" },
     { value: 50, suffix: "K+", label: "Orders Served" },
     { value: 4, suffix: ".9★", label: "Average Rating" },
     { value: 100, suffix: "%", label: "Boneless Guaranteed" },
 ];
+
+const StatItem = ({ value, suffix, label }) => {
+    const count = useCountUp(value);
+    return (
+        <div style={s.statItem}>
+            <span style={s.statNum}>{count}{suffix}</span>
+            <span style={s.statLabel}>{label}</span>
+        </div>
+    );
+};
+
 const StatBar = () => (
     <div style={s.statBar}>
-        {stats.map((st, i) => {
-            const count = useCountUp(st.value);
-            return (
-                <div key={i} style={s.statItem}>
-                    <span style={s.statNum}>{count}{st.suffix}</span>
-                    <span style={s.statLabel}>{st.label}</span>
-                </div>
-            );
-        })}
+        {statData.map((st) => (
+            <StatItem key={st.label} value={st.value} suffix={st.suffix} label={st.label} />
+        ))}
     </div>
 );
 
@@ -102,12 +64,12 @@ const Home = () => {
         const load = async () => {
             try {
                 const all = await getProducts();
-                // Show first 4 available products as "best sellers"
                 setBestSellers(all.filter(p => p.available).slice(0, 4));
             } catch (err) {
                 console.error(err);
+            } finally {
+                setLoadingProducts(false);
             }
-            finally { setLoadingProducts(false); }
         };
         load();
     }, []);
@@ -134,7 +96,6 @@ const Home = () => {
 
             {/* ── HERO ── */}
             <section style={s.hero}>
-                {/* Background texture dots */}
                 <div style={s.heroDots} aria-hidden="true" />
 
                 <div style={s.heroContent}>
@@ -161,7 +122,6 @@ const Home = () => {
                     </div>
                 </div>
 
-                {/* Slanted bottom bar */}
                 <div style={s.heroSlant} />
             </section>
 
@@ -175,19 +135,7 @@ const Home = () => {
             </div>
 
             {/* ── STATS BAR ── */}
-            <div style={s.statBar}>
-                {[
-                    { val: "12+", label: "Signature Flavors" },
-                    { val: "50K+", label: "Orders Served" },
-                    { val: "4.9★", label: "Average Rating" },
-                    { val: "100%", label: "Boneless Guaranteed" },
-                ].map((st, i) => (
-                    <div key={i} style={s.statItem}>
-                        <span style={s.statNum}>{st.val}</span>
-                        <span style={s.statLabel}>{st.label}</span>
-                    </div>
-                ))}
-            </div>
+            <StatBar />
 
             {/* ── WHY THE CRUNCH ── */}
             <section style={s.section}>
@@ -266,7 +214,6 @@ const Home = () => {
 const s = {
     page: { backgroundColor: "#F9F9F9" },
 
-    // Hero
     hero: { minHeight: "90vh", backgroundColor: "#FFC72C", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", textAlign: "center", position: "relative", overflow: "hidden", padding: "clamp(60px, 10vw, 80px) 20px clamp(80px, 14vw, 120px)" },
     heroDots: { position: "absolute", inset: 0, backgroundImage: "radial-gradient(#1A1A1A22 1.5px, transparent 1.5px)", backgroundSize: "28px 28px", zIndex: 0 },
     heroContent: { maxWidth: "820px", zIndex: 2, position: "relative" },
@@ -276,37 +223,31 @@ const s = {
     heroSub: { fontFamily: "'Public Sans', sans-serif", fontSize: "clamp(14px, 3vw, 18px)", fontWeight: "600", color: "#1A1A1A", maxWidth: "480px", margin: "0 auto clamp(24px, 6vw, 40px)", lineHeight: "1.6" },
     heroSlant: { position: "absolute", bottom: "-40px", left: 0, width: "100%", height: "100px", backgroundColor: "#F9F9F9", transform: "skewY(-3deg)", zIndex: 1 },
 
-    // Buttons
     btnGroup: { display: "flex", gap: "clamp(8px, 3vw, 16px)", justifyContent: "center", flexWrap: "wrap" },
     btnPrimary: { backgroundColor: "#1A1A1A", color: "#FFC72C", padding: "clamp(12px, 3vw, 18px) clamp(20px, 5vw, 44px)", border: "none", fontFamily: "'Oswald', sans-serif", fontSize: "clamp(14px, 3vw, 20px)", fontWeight: "bold", cursor: "pointer", boxShadow: "4px 4px 0px #fff", transition: "background .2s, box-shadow .2s", letterSpacing: "1px", minHeight: "44px", display: "flex", alignItems: "center" },
     btnSecondary: { backgroundColor: "transparent", color: "#1A1A1A", padding: "clamp(12px, 3vw, 18px) clamp(20px, 5vw, 44px)", border: "3px solid #1A1A1A", fontFamily: "'Oswald', sans-serif", fontSize: "clamp(14px, 3vw, 20px)", fontWeight: "bold", cursor: "pointer", transition: "background .2s, color .2s", letterSpacing: "1px", minHeight: "44px", display: "flex", alignItems: "center" },
 
-    // Ticker
     tickerWrap: { backgroundColor: "#1A1A1A", overflow: "hidden", borderTop: "3px solid #FFC72C", borderBottom: "3px solid #FFC72C", padding: "8px 0" },
     tickerTrack: { display: "flex", whiteSpace: "nowrap", width: "max-content" },
     tickerItem: { fontFamily: "'Oswald', sans-serif", color: "#FFC72C", fontSize: "clamp(12px, 2.5vw, 14px)", fontWeight: "700", letterSpacing: "2px", padding: "0 clamp(16px, 4vw, 28px)" },
     tickerDot: { color: "#fff" },
 
-    // Stats
     statBar: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", backgroundColor: "#fff", borderBottom: "3px solid #1A1A1A", padding: "clamp(20px, 4vw, 30px) clamp(12px, 4vw, 32px)" },
     statItem: { display: "flex", flexDirection: "column", alignItems: "center", padding: "clamp(8px, 2vw, 10px)" },
     statNum: { fontFamily: "'Oswald', sans-serif", fontSize: "clamp(28px, 6vw, 42px)", fontWeight: "900", color: "#1A1A1A", lineHeight: "1" },
     statLabel: { fontFamily: "'Public Sans', sans-serif", fontSize: "clamp(10px, 2vw, 13px)", fontWeight: "700", color: "#888", letterSpacing: "1px", marginTop: "4px", textTransform: "uppercase" },
 
-    // Sections
     section: { padding: "clamp(50px, 10vw, 90px) clamp(12px, 6vw, 64px)", backgroundColor: "#F9F9F9" },
     sectionHeader: { textAlign: "center", marginBottom: "clamp(30px, 8vw, 60px)" },
     sectionTag: { display: "inline-block", backgroundColor: "#1A1A1A", color: "#FFC72C", padding: "6px 14px", fontFamily: "'Public Sans', sans-serif", fontWeight: "900", fontSize: "clamp(10px, 2vw, 12px)", letterSpacing: "2px", marginBottom: "12px" },
     sectionTitle: { fontFamily: "'Oswald', sans-serif", fontSize: "clamp(32px, 8vw, 48px)", fontWeight: "900", color: "#1A1A1A", margin: 0 },
 
-    // Features
     featureGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "clamp(16px, 4vw, 24px)" },
     featureCard: { backgroundColor: "#fff", border: "3px solid #1A1A1A", padding: "clamp(20px, 5vw, 36px)", boxShadow: "4px 4px 0px #1A1A1A", transition: "background .2s", cursor: "default" },
     featIcon: { fontSize: "clamp(28px, 7vw, 40px)", display: "block", marginBottom: "12px" },
     featTitle: { fontFamily: "'Oswald', sans-serif", fontSize: "clamp(16px, 4vw, 22px)", color: "#1A1A1A", margin: "0 0 12px", textTransform: "uppercase" },
     featDesc: { fontFamily: "'Public Sans', sans-serif", fontSize: "clamp(13px, 2vw, 14px)", color: "#555", lineHeight: "1.6", margin: 0 },
 
-    // Best Sellers
     bsGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "clamp(16px, 4vw, 32px)" },
     bsCard: { backgroundColor: "#fff", border: "3px solid #FFC72C", boxShadow: "6px 6px 0px #FFC72C", overflow: "hidden" },
     bsImgWrap: { position: "relative", height: "auto", aspectRatio: "300 / 210", borderBottom: "3px solid #FFC72C", overflow: "hidden" },
@@ -317,7 +258,6 @@ const s = {
     bsName: { fontFamily: "'Oswald', sans-serif", fontSize: "clamp(16px, 4vw, 22px)", color: "#1A1A1A", margin: "0 0 8px", textTransform: "uppercase" },
     bsDesc: { fontFamily: "'Public Sans', sans-serif", fontSize: "clamp(12px, 2vw, 13px)", color: "#666", margin: 0, lineHeight: "1.6" },
 
-    // CTA
     cta: { backgroundColor: "#FFC72C", padding: "clamp(50px, 10vw, 100px) clamp(12px, 6vw, 64px)", textAlign: "center", borderTop: "5px solid #1A1A1A" },
     ctaTitle: { fontFamily: "'Oswald', sans-serif", fontSize: "clamp(32px, 8vw, 72px)", fontWeight: "900", color: "#1A1A1A", margin: "0 0 clamp(12px, 3vw, 16px)" },
     ctaSub: { fontFamily: "'Public Sans', sans-serif", fontSize: "clamp(14px, 3vw, 18px)", fontWeight: "600", color: "#1A1A1A", marginBottom: "clamp(24px, 6vw, 40px)" },

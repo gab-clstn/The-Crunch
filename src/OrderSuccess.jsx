@@ -12,7 +12,7 @@ const OrderSuccess = () => {
             const timer = setTimeout(() => navigate("/"), 5000);
             return () => clearTimeout(timer);
         }
-    }, [navigate, state?.orderId, state?.total]);
+    }, []);
 
     const { orderId, total, orderType, itemCount } = state || {};
     const orderTypeIcon = { "Dine In": "🍽️", "Pick-Up": "🏃", "Delivery": "🛵" }[orderType] || "🛒";

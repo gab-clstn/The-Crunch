@@ -1,9 +1,12 @@
-import { createContext, useContext, useEffect, useState } from "react";
+// Auth_Context.jsx — exports ONLY the AuthProvider component.
+// FIX: useAuth hook has been moved to useAuth.js so this file exports
+// only a component, satisfying Vite's fast-refresh constraint.
+import { createContext, useEffect, useState } from "react";
 import { auth, db } from "./firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 
-const AuthContext = createContext();
+export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
     const [currentUser, setCurrentUser] = useState(null);
@@ -14,16 +17,12 @@ export const AuthProvider = ({ children }) => {
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
             if (user) {
                 try {
-                    // Fetch the user's Firestore doc to get name and role
                     const userDoc = await getDoc(doc(db, "users", user.uid));
                     const userData = userDoc.exists() ? userDoc.data() : {};
-
-                    // Merge Firebase Auth user with Firestore data
                     setCurrentUser({ ...user, name: userData?.name || "" });
                     setIsAdmin(userData?.role === "admin");
                 } catch (error) {
                     console.error("Failed to fetch user doc:", error.message);
-                    // Still set the user so the app doesn't crash — just without role/name
                     setCurrentUser({ ...user, name: "" });
                     setIsAdmin(false);
                 }
@@ -42,5 +41,3 @@ export const AuthProvider = ({ children }) => {
         </AuthContext.Provider>
     );
 };
-
-export const useAuth = () => useContext(AuthContext);

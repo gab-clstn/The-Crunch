@@ -52,14 +52,15 @@ const MyOrders = () => {
             }
         );
         return () => unsubscribe();
-    }, [navigate]);
+    }, [currentUser]);
 
     const handleReorder = (order) => {
         clearCart();
         order.items.forEach(item => {
-            for (let i = 0; i < item.qty; i++) addToCart(item);
+            for (let i = 0; i < item.qty; i++) 
+                addToCart(item);
         });
-        navigate("/menu");
+        navigate("/cart");
     };
 
     const formatDate = (ts) => {
@@ -125,7 +126,7 @@ const MyOrders = () => {
                                                 color: st.color,
                                                 border: `2px solid ${st.border}`,
                                             }}>
-                                                {STATUS_ICONS[order.status]} {order.status?.toUpperCase()}
+                                                {STATUS_ICONS[order.status] || "⏳"} {(order.status || "Pending").toUpperCase()}
                                             </span>
                                             <span style={o.orderDate}>{formatDate(order.createdAt)}</span>
                                         </div>
