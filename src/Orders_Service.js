@@ -3,30 +3,33 @@ import {
     collection, addDoc, query, where,
     orderBy, onSnapshot, serverTimestamp, doc, updateDoc
 } from "firebase/firestore";
+import { handleFirebaseError, withRetry } from "./firebase/errorHandler";
 
 // Save a new order
 export const placeOrder = async (userId, orderData) => {
     try {
-        const docRef = await addDoc(collection(db, "orders"), {
-            ...orderData,
-            userId,
-            status: "Pending",
-            createdAt: serverTimestamp(),
-        });
+        const docRef = await withRetry(() =>
+            addDoc(collection(db, "orders"), {
+                ...orderData,
+                userId,
+                status: "Pending",
+                createdAt: serverTimestamp(),
+            })
+        );
         return docRef;
     } catch (error) {
-        console.error("placeOrder error:", error);
-        throw error;
+        throw new Error(handleFirebaseError(error));
     }
 };
 
-// Real-time listener for a user's orders — fixed: now accepts onError as 3rd arg
+// Real-time listener for a user's orders
 export const subscribeToUserOrders = (userId, callback, onError) => {
     const q = query(
         collection(db, "orders"),
         where("userId", "==", userId),
         orderBy("createdAt", "desc")
     );
+
     return onSnapshot(
         q,
         (snapshot) => {
@@ -34,8 +37,9 @@ export const subscribeToUserOrders = (userId, callback, onError) => {
             callback(orders);
         },
         (error) => {
-            console.error("subscribeToUserOrders error:", error);
-            if (onError) onError(error);
+            const message = handleFirebaseError(error);
+            console.error("subscribeToUserOrders error:", message);
+            if (onError) onError(message);
         }
     );
 };
@@ -46,6 +50,7 @@ export const subscribeToAllOrders = (callback, onError) => {
         collection(db, "orders"),
         orderBy("createdAt", "desc")
     );
+
     return onSnapshot(
         q,
         (snapshot) => {
@@ -53,19 +58,19 @@ export const subscribeToAllOrders = (callback, onError) => {
             callback(orders);
         },
         (error) => {
-            console.error("subscribeToAllOrders error:", error);
-            if (onError) onError(error);
+            const message = handleFirebaseError(error);
+            console.error("subscribeToAllOrders error:", message);
+            if (onError) onError(message);
         }
     );
 };
 
-// Update order status (for admin use)
+// Update order status (admin use)
 export const updateOrderStatus = async (orderId, status) => {
     try {
         const ref = doc(db, "orders", orderId);
-        return await updateDoc(ref, { status });
+        return await withRetry(() => updateDoc(ref, { status }));
     } catch (error) {
-        console.error("updateOrderStatus error:", error);
-        throw error;
+        throw new Error(handleFirebaseError(error));
     }
 };

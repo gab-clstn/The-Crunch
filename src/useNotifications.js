@@ -11,7 +11,7 @@ let _handlers = new Map(); // track handlers to avoid duplicates
 function getSocket() {
   if (!_socket || _socket.disconnected) {
     _socket = io(SERVER_URL, {
-      transports: ["websocket", "polling"],
+      withCredentials: true,
       reconnection: true,
       reconnectionAttempts: Infinity,
       reconnectionDelay: 1000,
@@ -117,7 +117,7 @@ export function useNotifications({ userId, role }) {
         notify(
           "🛎️ New Order Received!",
           `${customerName} placed a ${orderType} order — ` +
-            `${itemCount} item${itemCount !== 1 ? "s" : ""} · ₱${total.toLocaleString()}`
+          `${itemCount} item${itemCount !== 1 ? "s" : ""} · ₱${total.toLocaleString()}`
         );
       };
       _handlers.set("admin", handler);
@@ -129,9 +129,9 @@ export function useNotifications({ userId, role }) {
         console.log("[Notifications] order_status_updated event received:", data);
         const { status, message } = data;
         const titles = {
-          Pending:   "⏳ Order Received",
+          Pending: "⏳ Order Received",
           Preparing: "👨‍🍳 Order Being Prepared",
-          Ready:     "✅ Order Ready!",
+          Ready: "✅ Order Ready!",
           Delivered: "📦 Order Delivered",
         };
         notify(titles[status] || "Order Update", message);
