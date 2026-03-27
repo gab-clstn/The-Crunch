@@ -33,12 +33,13 @@ test.describe('The Crunch — Visual Regression', () => {
     test('Home page renders correctly', async ({ page }) => {
         await page.goto(BASE_URL);
         await waitForApp(page, 'nav');
+        await page.waitForTimeout(1000);
 
         // Check key elements are visible
         await expect(page.locator('nav')).toBeVisible();
         await expect(page).toHaveScreenshot('home.png', {
             fullPage: true,
-            maxDiffPixelRatio: 0.02, // allow 2% pixel difference (font rendering, etc.)
+            maxDiffPixelRatio: 0.02,
         });
     });
 
