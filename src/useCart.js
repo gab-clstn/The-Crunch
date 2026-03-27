@@ -1,6 +1,7 @@
-// useCart.js — custom hook only (no component exports).
-// Import from here instead of Cart_Context.jsx wherever you need useCart().
+// src/useCart.js
+// Custom hook extracted from Cart_Context.jsx to satisfy Fast Refresh
+// (a file must export only components OR only non-component exports).
 import { useContext } from "react";
-import { CartContext } from "./Cart_Context";
+import { CartContext } from "./CartContext";
 
 export const useCart = () => useContext(CartContext);

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "./Auth_Context";
-import { useCart } from "./Cart_Context";
+import { useAuth } from "./useAuth";
+import { useCart } from "./useCart";
 import { subscribeToUserOrders } from "./Orders_Service";
 import { useNotifications } from "./useNotifications";
 

@@ -1,9 +1,8 @@
-// Cart_Context.jsx — exports ONLY the CartProvider component.
-// FIX: useCart hook has been moved to useCart.js so this file exports
-// only a component, satisfying Vite's fast-refresh constraint.
-import React, { createContext, useState } from "react";
-
-export const CartContext = createContext();
+// src/Cart_Context.jsx
+// Exports ONLY the CartProvider component — satisfies Vite Fast Refresh.
+// CartContext lives in CartContext.js; the useCart hook lives in useCart.js.
+import React, { useState } from "react";
+import { CartContext } from "./CartContext";
 
 export const CartProvider = ({ children }) => {
     const [cartItems, setCartItems] = useState([]);
@@ -42,8 +41,4 @@ export const CartProvider = ({ children }) => {
             {children}
         </CartContext.Provider>
     );
-};
-
-export const useCart = () => {
-    return useContext(CartContext);
 };

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { subscribeToProducts } from "./Product_Service";
-import { useCart } from "./Cart_Context";
-import { useAuth } from "./Auth_Context";
+import { useCart } from "./useCart";
+import { useAuth } from "./useAuth";
 import { imageMap } from "./assets/imageMap";
 import { useNavigate } from "react-router-dom";
 

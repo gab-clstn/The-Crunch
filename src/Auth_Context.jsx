@@ -1,12 +1,11 @@
-// Auth_Context.jsx — exports ONLY the AuthProvider component.
-// FIX: useAuth hook has been moved to useAuth.js so this file exports
-// only a component, satisfying Vite's fast-refresh constraint.
-import { createContext, useEffect, useState } from "react";
+// src/Auth_Context.jsx
+// Exports ONLY the AuthProvider component — satisfies Vite Fast Refresh.
+// AuthContext lives in AuthContext.js; the useAuth hook lives in useAuth.js.
+import { useState, useEffect } from "react";
+import { AuthContext } from "./AuthContext";
 import { auth, db } from "./firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
-
-export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
     const [currentUser, setCurrentUser] = useState(null);
@@ -40,8 +39,4 @@ export const AuthProvider = ({ children }) => {
             {!loading && children}
         </AuthContext.Provider>
     );
-};
-
-export const useAuth = () => {
-    return useContext(AuthContext);
 };
