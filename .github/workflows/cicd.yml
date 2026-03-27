@@ -91,13 +91,15 @@ jobs:
         run: |
           echo "PORT=3000" >> ./server/.env
           echo "CLIENT_ORIGIN=${{ secrets.CLIENT_ORIGIN }}" >> ./server/.env
-        # Add any other server secrets your API needs to start up here
+          echo "FIREBASE_SERVICE_ACCOUNT=${{ secrets.FIREBASE_SERVICE_ACCOUNT_THE_CRUNCH_4735E }}" >> ./server/.env
 
       - name: Start server and health check
         run: |
           node server/index.js &
           sleep 5
-          curl --fail http://localhost:3000/health || (echo "Health check failed" && exit 1)
+          curl --fail http://localhost:3001/health || (echo "Health check failed" && exit 1)
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_THE_CRUNCH_4735E }}
 
   # ─────────────────────────────────────────────
   # JOB 3 — Build (runs after lint passes)

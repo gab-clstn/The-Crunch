@@ -1,6 +1,6 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import { useCart } from "./useCart";
-import { useAuth } from "./useCart";
+import { useAuth } from "./useAuth";
 import { placeOrder } from "./Orders_Service";
 import { imageMap } from "./assets/imageMap";
 import { useState } from "react";
