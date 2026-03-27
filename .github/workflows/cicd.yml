@@ -312,9 +312,10 @@ jobs:
 
       # ── Push the server/ folder to Railway
       - name: Deploy to Railway
-        run: railway up --service ${{ secrets.RAILWAY_SERVICE_ID }} --path-as-root ./server
+        run: railway up --service ${{ secrets.RAILWAY_SERVICE_ID }} --path-as-root ./server --detach
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          
 
       # ── Give Railway a few seconds to spin up then confirm it's live
       - name: Health check Railway API
