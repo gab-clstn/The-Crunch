@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { getProducts } from "./Product_Service";
 import { imageMap } from "./assets/imageMap";
 
@@ -104,7 +104,9 @@ const Home = () => {
                 const all = await getProducts();
                 // Show first 4 available products as "best sellers"
                 setBestSellers(all.filter(p => p.available).slice(0, 4));
-            } catch (_) {}
+            } catch (err) {
+                console.error(err);
+            }
             finally { setLoadingProducts(false); }
         };
         load();

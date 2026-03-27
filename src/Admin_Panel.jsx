@@ -176,7 +176,7 @@ const OrdersTab = () => {
             setLoading(false);
         });
         return () => unsubscribe();
-    }, []);
+    }, [navigate]);
 
     const handleStatusChange = async (orderId, newStatus) => {
         setUpdating(orderId);
@@ -374,7 +374,7 @@ const AdminPanel = () => {
         if (!authLoading && !isAdmin) navigate("/");
     }, [isAdmin, authLoading]);
 
-    useEffect(() => { loadProducts(); }, []);
+    useEffect(() => { loadProducts(); }, [navigate]);
 
     const loadProducts = async () => {
         const data = await getProducts();
