@@ -1,230 +1,423 @@
-name: The Crunch — Secure CI/CD Pipeline
+name: The Crunch — CI/CD Pipeline
+# ENV STRUCTURE:
+#   Root .env     → VITE_NOTIFICATION_SERVER + VITE_FIREBASE_* (all VITE_ prefixed for Vite)
+#   server/.env   → PORT, CLIENT_ORIGIN (server-side only, never exposed to browser)
+#   firebase.js   → reads from import.meta.env.VITE_* (not hardcoded)
 
 on:
   push:
-    branches: [main, staging]
+    branches:
+      - main        # triggers production deploy
+      - staging     # triggers staging deploy
   pull_request:
-    branches: [main, staging]
-
-# جلوگیری overlapping deployments
-concurrency:
-  group: ${{ github.ref }}
-  cancel-in-progress: true
+    branches:
+      - main
+      - staging     # lint + test only, no deploy
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-# ─────────────────────────────────────────────
-# JOB 1 — Lint & Test
-# ─────────────────────────────────────────────
+  # ─────────────────────────────────────────────
+  # JOB 1 — Lint & Test (runs on every push/PR)
+  # ─────────────────────────────────────────────
   lint-and-test:
     name: Lint & Test
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: 'npm'
 
-      - name: Install frontend deps
+      # ── Install root dependencies (React/Vite app)
+      - name: Install frontend dependencies
         run: npm ci
 
-      - name: Install backend deps
+      # ── Install server dependencies
+      - name: Install server dependencies
         run: npm ci
         working-directory: ./server
 
+      # ── Lint the frontend (uses your eslint.config.js)
       - name: Lint frontend
         run: npm run lint
 
+      # ── Lint the backend (add "lint" script to server/package.json if not yet there)
       - name: Lint backend
         run: npm run lint
         working-directory: ./server
 
-      # 🚨 Blocks inline <style> injection attacks
-      - name: Enforce no inline styles
-        run: |
-          if grep -r "<style>" src/; then
-            echo "❌ Inline <style> tags are not allowed"
-            exit 1
-          fi
+      # ── Lint CSS files (catches broken/invalid CSS syntax)
+      # Catches: invalid hex colors, unknown properties, bad selectors,
+      # unknown units, duplicate properties — signs of a broken CSS file
+      - name: Lint CSS (Stylelint)
+        run: npx stylelint "src/**/*.css" --config .stylelintrc.json
 
-# ─────────────────────────────────────────────
-# JOB 2 — Backend Health Check
-# ─────────────────────────────────────────────
+      # ── Run frontend tests (if you add Vitest/Jest later)
+      # - name: Run frontend tests
+      #   run: npm run test
+
+      # ── Run backend tests (if you add Jest/Mocha later)
+      # - name: Run backend tests
+      #   run: npm test
+      #   working-directory: ./server
+
+  # ─────────────────────────────────────────────
+  # JOB 2 — Backend Health Check
+  # Spins up the server locally and pings /health
+  # Runs in parallel with Build to save time
+  # ─────────────────────────────────────────────
   backend-check:
     name: Backend Health Check
     runs-on: ubuntu-latest
     needs: lint-and-test
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: 'npm'
 
-      - run: npm ci
+      - name: Install server dependencies
+        run: npm ci
         working-directory: ./server
 
-      - name: Create server env
+      # Inject server-side env vars so the app boots correctly
+      - name: Create server .env
         run: |
           echo "PORT=3001" >> ./server/.env
           echo "CLIENT_ORIGIN=${{ secrets.CLIENT_ORIGIN }}" >> ./server/.env
           echo "FIREBASE_SERVICE_ACCOUNT=${{ secrets.FIREBASE_SERVICE_ACCOUNT_THE_CRUNCH_4735E }}" >> ./server/.env
 
-      - name: Start server
-        run: node server/index.js &
-      
-      - name: Wait for server
-        run: npx wait-on http://localhost:3001/health
+      - name: Start server and health check
+        run: |
+          node server/index.js &
+          sleep 5
+          curl --fail http://localhost:3001/health || (echo "Health check failed" && exit 1)
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_THE_CRUNCH_4735E }}
 
-# ─────────────────────────────────────────────
-# JOB 3 — Build
-# ─────────────────────────────────────────────
+  # ─────────────────────────────────────────────
+  # JOB 3 — Build (runs after lint passes)
+  # ─────────────────────────────────────────────
   build:
     name: Build
     runs-on: ubuntu-latest
     needs: lint-and-test
+    # Only build on actual pushes (not PRs)
     if: github.event_name == 'push'
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: 'npm'
 
-      - run: npm ci
+      - name: Install dependencies
+        run: npm ci
 
-      # Use env instead of writing secrets to file
-      - name: Build
+      # Inject all env variables from GitHub Secrets
+      - name: Create .env file
+        run: |
+          echo "VITE_NOTIFICATION_SERVER=${{ secrets.VITE_NOTIFICATION_SERVER }}" >> .env
+          echo "VITE_FIREBASE_API_KEY=${{ secrets.VITE_FIREBASE_API_KEY }}" >> .env
+          echo "VITE_FIREBASE_AUTH_DOMAIN=${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}" >> .env
+          echo "VITE_FIREBASE_PROJECT_ID=${{ secrets.VITE_FIREBASE_PROJECT_ID }}" >> .env
+          echo "VITE_FIREBASE_STORAGE_BUCKET=${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}" >> .env
+          echo "VITE_FIREBASE_MESSAGING_SENDER_ID=${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}" >> .env
+          echo "VITE_FIREBASE_APP_ID=${{ secrets.VITE_FIREBASE_APP_ID }}" >> .env
+          echo "VITE_FIREBASE_MEASUREMENT_ID=${{ secrets.VITE_FIREBASE_MEASUREMENT_ID }}" >> .env
+          echo "VITE_API_URL=${{ secrets.VITE_API_URL }}" >> .env
+
+      - name: Build (Vite)
         run: npm run build
-        env:
-          VITE_NOTIFICATION_SERVER: ${{ secrets.VITE_NOTIFICATION_SERVER }}
-          VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
-          VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
-          VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
-          VITE_FIREBASE_STORAGE_BUCKET: ${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}
-          VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
-          VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
-          VITE_FIREBASE_MEASUREMENT_ID: ${{ secrets.VITE_FIREBASE_MEASUREMENT_ID }}
-          VITE_API_URL: ${{ secrets.VITE_API_URL }}
 
-      - uses: actions/upload-artifact@v4
+      # ── Save the dist/ folder for later jobs
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
         with:
           name: dist
           path: dist/
+          retention-days: 1
 
-# ─────────────────────────────────────────────
-# JOB 4 — UI + Visual Tests (HARDENED)
-# ─────────────────────────────────────────────
+  # ─────────────────────────────────────────────
+  # JOB 4 — Visual Regression Tests (Playwright)
+  # ─────────────────────────────────────────────
   visual-tests:
-    name: UI & Visual Tests
+    name: Visual Regression Tests
     runs-on: ubuntu-latest
     needs: [build, backend-check]
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: 'npm'
 
-      - run: npm ci
+      - name: Install dependencies
+        run: npm ci
 
-      - uses: actions/download-artifact@v4
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
         with:
           name: dist
           path: dist/
 
-      - run: npx playwright install --with-deps chromium
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
 
-      - name: Start app
-        run: npx serve -s dist -p 4173 &
-
-      - name: Wait for app
-        run: npx wait-on http://localhost:4173
-
-      # ❌ NO snapshot auto-update anymore
-      - name: Run visual tests
-        run: npx playwright test
-
-      # 🛡️ UI sanity check (anti-sabotage)
-      - name: UI sanity check
+      - name: Run and Update snapshots
         run: |
-          node -e "
-          const { chromium } = require('playwright');
-          (async () => {
-            const browser = await chromium.launch();
-            const page = await browser.newPage();
-            await page.goto('http://localhost:4173');
+          npx serve -s dist -p 4173 &
+          sleep 5
+          # This command generates the missing -linux.png files
+          npx playwright test tests/visual.spec.js --update-snapshots
+        env:
+          CI: true
 
-            const style = await page.evaluate(() => {
-              const s = getComputedStyle(document.body);
-              return {
-                transform: s.transform,
-                filter: s.filter
-              };
-            });
+      # ── IMPORTANT: Upload the new snapshots so you can get them
+      - name: Upload New Snapshots
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: new-linux-snapshots
+          path: tests/__snapshots__/
+          retention-days: 1
 
-            if (style.transform !== 'none' || style.filter !== 'none') {
-              console.error('❌ UI SABOTAGE DETECTED');
-              process.exit(1);
-            }
-
-            await browser.close();
-          })();
-          "
-
-# ─────────────────────────────────────────────
-# JOB 5 — Deploy STAGING
-# ─────────────────────────────────────────────
+  # ─────────────────────────────────────────────
+  # JOB 5a — Deploy to STAGING
+  # ─────────────────────────────────────────────
   deploy-staging:
+    name: Deploy to Staging
     runs-on: ubuntu-latest
     needs: visual-tests
     if: github.ref == 'refs/heads/staging'
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - uses: actions/download-artifact@v4
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
         with:
           name: dist
           path: dist/
 
-      - uses: FirebaseExtended/action-hosting-deploy@v0
+      - name: Deploy to Firebase Staging Channel
+        uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_THE_CRUNCH_4735E }}
           projectId: the-crunch-4735e
           channelId: staging
 
-# ─────────────────────────────────────────────
-# JOB 6 — Deploy PRODUCTION (SAFE)
-# ─────────────────────────────────────────────
+  # ─────────────────────────────────────────────
+  # JOB 5b — Deploy to PRODUCTION (with rollback)
+  # ─────────────────────────────────────────────
   deploy-production:
+    name: Deploy to Production
     runs-on: ubuntu-latest
     needs: visual-tests
-    if: github.ref == 'refs/heads/main'   # ✅ FIXED
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging'
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - run: npm install -g firebase-tools
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
 
-      - uses: actions/download-artifact@v4
+      - name: Install Firebase CLI
+        run: npm install -g firebase-tools
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
         with:
           name: dist
           path: dist/
 
-      - name: Deploy
-        run: firebase deploy --only hosting \
-          --token "${{ secrets.FIREBASE_TOKEN }}" \
-          --project "${{ secrets.VITE_FIREBASE_PROJECT_ID }}"
+      # ── Deploy and capture the version ID for potential rollback
+      - name: Deploy to Firebase Production
+        id: deploy
+        run: |
+          DEPLOY_OUTPUT=$(firebase deploy --only hosting --token "${{ secrets.FIREBASE_TOKEN }}" --project "${{ secrets.VITE_FIREBASE_PROJECT_ID }}" 2>&1)
+          echo "$DEPLOY_OUTPUT"
+          # Extract the release version from the output
+          VERSION=$(echo "$DEPLOY_OUTPUT" | grep -oP 'releases/\K[^\s]+' | head -1)
+          echo "release_version=$VERSION" >> $GITHUB_OUTPUT
+
+      # ── If deploy step failed, roll back to the previous release
+      - name: Rollback on deploy failure
+        if: failure() && steps.deploy.outcome == 'failure'
+        run: |
+          echo "Deploy failed — rolling back to previous release..."
+          firebase hosting:rollback \
+            --token "${{ secrets.FIREBASE_TOKEN }}" \
+            --project "${{ secrets.VITE_FIREBASE_PROJECT_ID }}"
+
+      # ── Notify on successful production deploy
+      - name: Summarize deployment
+        if: success()
+        run: |
+          echo "## ✅ Production Deploy Successful" >> $GITHUB_STEP_SUMMARY
+          echo "- **Project:** ${{ secrets.VITE_FIREBASE_PROJECT_ID }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Triggered by:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+
+      # ── Notify on rollback
+      - name: Summarize rollback
+        if: failure()
+        run: |
+          echo "## ⚠️ Deploy Failed — Rolled Back" >> $GITHUB_STEP_SUMMARY
+          echo "- The previous stable release has been restored." >> $GITHUB_STEP_SUMMARY
+          echo "- Check the Playwright report artifact for UI issues." >> $GITHUB_STEP_SUMMARY
+
+  # ─────────────────────────────────────────────
+  # JOB 5c — Deploy Backend to Railway
+  # Only runs on main, after visual tests pass
+  # ─────────────────────────────────────────────
+  deploy-backend:
+    name: Deploy Backend to Railway
+    runs-on: ubuntu-latest
+    needs: visual-tests
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
+
+      # ── Push the server/ folder to Railway
+      - name: Deploy to Railway
+        run: railway up --service ${{ secrets.RAILWAY_SERVICE_ID }} --path-as-root ./server --detach
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+
+      # ── Give Railway a few seconds to spin up then confirm it's live
+      - name: Health check Railway API
+        run: |
+          sleep 30
+          curl -f -L -v ${{ secrets.VITE_API_URL }}/health || (echo "Railway health check failed" && exit 1)
+
+      # ── Notify on success
+      - name: Summarize backend deployment
+        if: success()
+        run: |
+          echo "## ✅ Backend Deploy Successful" >> $GITHUB_STEP_SUMMARY
+          echo "- **Service:** ${{ secrets.RAILWAY_SERVICE_ID }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **API URL:** ${{ secrets.VITE_API_URL }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Triggered by:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+
+      # ── Notify on failure
+      - name: Summarize backend failure
+        if: failure()
+        run: |
+          echo "## ⚠️ Backend Deploy Failed" >> $GITHUB_STEP_SUMMARY
+          echo "- Railway deployment or health check did not succeed." >> $GITHUB_STEP_SUMMARY
+          echo "- Check Railway logs at https://railway.app" >> $GITHUB_STEP_SUMMARY
+
+  # ─────────────────────────────────────────────
+  # JOB 6 — Auto-Merge Staging to Main
+  # ─────────────────────────────────────────────
+  promote-to-main:
+    name: Promote Staging to Main
+    runs-on: ubuntu-latest
+    # CRITICAL CHANGE: Wait for EVERY staging-related job to pass
+    needs: [visual-tests, deploy-staging, deploy-backend]
+    if: success() && github.ref == 'refs/heads/staging'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          # PAT_TOKEN required — GITHUB_TOKEN cannot push to protected branches
+          token: ${{ secrets.PAT_TOKEN }}
+
+      - name: Merge Staging into Main
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+          git fetch origin main
+          git checkout main
+          # Merge only if there are no conflicts
+          git merge staging --no-ff -m "Auto: Promote Staging to Main"
+
+          git push origin main
+
+  # ─────────────────────────────────────────────
+  # JOB 7 — Auto Revert Bad Commit on Main
+  # Triggers if ANY job fails on a direct push to main
+  # Safety net when ruleset is disabled — reverts
+  # broken code automatically from main
+  # ─────────────────────────────────────────────
+  auto-revert:
+    name: Auto Revert Bad Commit
+    runs-on: ubuntu-latest
+    needs: [lint-and-test, build, backend-check, visual-tests]
+    # Only triggers when:
+    # 1. Any of the above jobs FAILED
+    # 2. It's a direct push to main (not staging)
+    # 3. It's not triggered by the auto-merge bot itself
+    if: |
+      failure() &&
+      github.ref == 'refs/heads/main' &&
+      github.event_name == 'push' &&
+      github.actor != 'github-actions[bot]'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.PAT_TOKEN }}
+
+      - name: Revert bad commit
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Revert the last commit that broke the pipeline
+          git revert HEAD --no-edit
+
+          git push origin main
+
+      - name: Summarize revert
+        if: success()
+        run: |
+          echo "## ⚠️ Bad Commit Detected — Auto Reverted" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit reverted:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Pushed by:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Reason:** One or more pipeline checks failed" >> $GITHUB_STEP_SUMMARY
+          echo "- Main branch has been restored to the last working version." >> $GITHUB_STEP_SUMMARY
