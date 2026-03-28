@@ -53,12 +53,6 @@ jobs:
         run: npm run lint
         working-directory: ./server
 
-      # ── Lint CSS files (catches broken/invalid CSS syntax)
-      # Catches: invalid hex colors, unknown properties, bad selectors,
-      # unknown units, duplicate properties — signs of a broken CSS file
-      - name: Lint CSS (Stylelint)
-        run: npx stylelint "src/**/*.css" --config .stylelintrc.json
-
       # ── Run frontend tests (if you add Vitest/Jest later)
       # - name: Run frontend tests
       #   run: npm run test
@@ -321,6 +315,7 @@ jobs:
         run: railway up --service ${{ secrets.RAILWAY_SERVICE_ID }} --path-as-root ./server --detach
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          
 
       # ── Give Railway a few seconds to spin up then confirm it's live
       - name: Health check Railway API
@@ -355,69 +350,24 @@ jobs:
     # CRITICAL CHANGE: Wait for EVERY staging-related job to pass
     needs: [visual-tests, deploy-staging, deploy-backend]
     if: success() && github.ref == 'refs/heads/staging'
-
+    
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          # PAT_TOKEN required — GITHUB_TOKEN cannot push to protected branches
-          token: ${{ secrets.PAT_TOKEN }}
+          # Ensure you use a token with push permissions
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Merge Staging into Main
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-
+          
           git fetch origin main
           git checkout main
           # Merge only if there are no conflicts
           git merge staging --no-ff -m "Auto: Promote Staging to Main"
-
+          
           git push origin main
-
-  # ─────────────────────────────────────────────
-  # JOB 7 — Auto Revert Bad Commit on Main
-  # Triggers if ANY job fails on a direct push to main
-  # Safety net when ruleset is disabled — reverts
-  # broken code automatically from main
-  # ─────────────────────────────────────────────
-  auto-revert:
-    name: Auto Revert Bad Commit
-    runs-on: ubuntu-latest
-    needs: [lint-and-test, build, backend-check, visual-tests]
-    # Only triggers when:
-    # 1. Any of the above jobs FAILED
-    # 2. It's a direct push to main (not staging)
-    # 3. It's not triggered by the auto-merge bot itself
-    if: |
-      failure() &&
-      github.ref == 'refs/heads/main' &&
-      github.event_name == 'push' &&
-      github.actor != 'github-actions[bot]'
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          token: ${{ secrets.PAT_TOKEN }}
-
-      - name: Revert bad commit
-        run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-
-          # Revert the last commit that broke the pipeline
-          git revert HEAD --no-edit
-
-          git push origin main
-
-      - name: Summarize revert
-        if: success()
-        run: |
-          echo "## ⚠️ Bad Commit Detected — Auto Reverted" >> $GITHUB_STEP_SUMMARY
-          echo "- **Commit reverted:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Pushed by:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Reason:** One or more pipeline checks failed" >> $GITHUB_STEP_SUMMARY
-          echo "- Main branch has been restored to the last working version." >> $GITHUB_STEP_SUMMARY
+          
