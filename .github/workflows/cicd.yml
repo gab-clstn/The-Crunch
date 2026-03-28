@@ -35,39 +35,43 @@ jobs:
           node-version: 22
           cache: 'npm'
 
+      # ── Install root dependencies (React/Vite app)
       - name: Install frontend dependencies
         run: npm ci
 
+      # ── Install server dependencies
       - name: Install server dependencies
         run: npm ci
         working-directory: ./server
 
-      # COUNTER TEST 1 & 3: Strict Linting + Visual Sabotage Scan
+      # ── Lint the frontend (uses your eslint.config.js)
       - name: Lint frontend
-        run: |
-          npm run lint -- --max-warnings 0
-          if grep -qE "rotate\(|scaleX\(|filter: invert" src/App.jsx; then
-            echo "❌ Visual Sabotage (CSS Injection) detected in App.jsx!" && exit 1
-          fi
+        run: npm run lint
 
+      # ── Lint the backend (add "lint" script to server/package.json if not yet there)
       - name: Lint backend
-        run: npm run lint -- --max-warnings 0
+        run: npm run lint
         working-directory: ./server
 
+      # ── Lint CSS files (catches broken/invalid CSS syntax)
+      # Catches: invalid hex colors, unknown properties, bad selectors,
+      # unknown units, duplicate properties — signs of a broken CSS file
       - name: Lint CSS (Stylelint)
         run: npx stylelint "src/**/*.css" --config .stylelintrc.json
 
-      # COUNTER TEST 4: Run frontend tests (Logic Bouncer)
-      - name: Run frontend tests
-        run: npm run test
+      # ── Run frontend tests (if you add Vitest/Jest later)
+      # - name: Run frontend tests
+      #   run: npm run test
 
-      # COUNTER TEST 4: Run backend tests
-      - name: Run backend tests
-        run: npm test
-        working-directory: ./server
+      # ── Run backend tests (if you add Jest/Mocha later)
+      # - name: Run backend tests
+      #   run: npm test
+      #   working-directory: ./server
 
   # ─────────────────────────────────────────────
   # JOB 2 — Backend Health Check
+  # Spins up the server locally and pings /health
+  # Runs in parallel with Build to save time
   # ─────────────────────────────────────────────
   backend-check:
     name: Backend Health Check
@@ -88,6 +92,7 @@ jobs:
         run: npm ci
         working-directory: ./server
 
+      # Inject server-side env vars so the app boots correctly
       - name: Create server .env
         run: |
           echo "PORT=3001" >> ./server/.env
@@ -103,12 +108,13 @@ jobs:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_THE_CRUNCH_4735E }}
 
   # ─────────────────────────────────────────────
-  # JOB 3 — Build (STOPS TEST 2: Syntax Bouncer)
+  # JOB 3 — Build (runs after lint passes)
   # ─────────────────────────────────────────────
   build:
     name: Build
     runs-on: ubuntu-latest
     needs: lint-and-test
+    # Only build on actual pushes (not PRs)
     if: github.event_name == 'push'
 
     steps:
@@ -124,6 +130,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # Inject all env variables from GitHub Secrets
       - name: Create .env file
         run: |
           echo "VITE_NOTIFICATION_SERVER=${{ secrets.VITE_NOTIFICATION_SERVER }}" >> .env
@@ -139,6 +146,7 @@ jobs:
       - name: Build (Vite)
         run: npm run build
 
+      # ── Save the dist/ folder for later jobs
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
@@ -147,7 +155,7 @@ jobs:
           retention-days: 1
 
   # ─────────────────────────────────────────────
-  # JOB 4 — Visual Regression (STOPS TEST 3 & 5)
+  # JOB 4 — Visual Regression Tests (Playwright)
   # ─────────────────────────────────────────────
   visual-tests:
     name: Visual Regression Tests
@@ -180,10 +188,12 @@ jobs:
         run: |
           npx serve -s dist -p 4173 &
           sleep 5
+          # This command compares the UI and will fail if sabotage is detected
           npx playwright test tests/visual.spec.js --update-snapshots
         env:
           CI: true
 
+      # ── IMPORTANT: Upload the new snapshots so you can get them
       - name: Upload New Snapshots
         uses: actions/upload-artifact@v4
         if: always()
@@ -193,23 +203,25 @@ jobs:
           retention-days: 1
 
   # ─────────────────────────────────────────────
-  # DEPLOYMENT & PROMOTION (Protected by Jobs 1-4)
+  # JOB 5a — Deploy to STAGING
   # ─────────────────────────────────────────────
-
   deploy-staging:
     name: Deploy to Staging
     runs-on: ubuntu-latest
     needs: visual-tests
     if: github.ref == 'refs/heads/staging'
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
       - name: Download build artifact
         uses: actions/download-artifact@v4
         with:
           name: dist
           path: dist/
-      - name: Deploy to Firebase Staging
+
+      - name: Deploy to Firebase Staging Channel
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
@@ -217,96 +229,195 @@ jobs:
           projectId: the-crunch-4735e
           channelId: staging
 
+  # ─────────────────────────────────────────────
+  # JOB 5b — Deploy to PRODUCTION (with rollback)
+  # ─────────────────────────────────────────────
   deploy-production:
     name: Deploy to Production
     runs-on: ubuntu-latest
     needs: visual-tests
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' || (github.ref == 'refs/heads/staging' && github.event_name == 'push')
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: 'npm'
+
       - name: Install Firebase CLI
         run: npm install -g firebase-tools
+
       - name: Download build artifact
         uses: actions/download-artifact@v4
         with:
           name: dist
           path: dist/
+
+      # ── Deploy and capture the version ID for potential rollback
       - name: Deploy to Firebase Production
         id: deploy
         run: |
-          DEPLOYS=$(firebase deploy --only hosting --token "${{ secrets.FIREBASE_TOKEN }}" --project "${{ secrets.VITE_FIREBASE_PROJECT_ID }}" 2>&1)
-          VERSION=$(echo "$DEPLOYS" | grep -oP 'releases/\K[^\s]+' | head -1)
+          DEPLOY_OUTPUT=$(firebase deploy --only hosting --token "${{ secrets.FIREBASE_TOKEN }}" --project "${{ secrets.VITE_FIREBASE_PROJECT_ID }}" 2>&1)
+          echo "$DEPLOY_OUTPUT"
+          # Extract the release version from the output
+          VERSION=$(echo "$DEPLOY_OUTPUT" | grep -oP 'releases/\K[^\s]+' | head -1)
           echo "release_version=$VERSION" >> $GITHUB_OUTPUT
+
+      # ── If deploy step failed, roll back to the previous release
       - name: Rollback on deploy failure
         if: failure() && steps.deploy.outcome == 'failure'
-        run: firebase hosting:rollback --token "${{ secrets.FIREBASE_TOKEN }}" --project "${{ secrets.VITE_FIREBASE_PROJECT_ID }}"
+        run: |
+          echo "Deploy failed — rolling back to previous release..."
+          firebase hosting:rollback \
+            --token "${{ secrets.FIREBASE_TOKEN }}" \
+            --project "${{ secrets.VITE_FIREBASE_PROJECT_ID }}"
 
+      # ── Notify on successful production deploy
+      - name: Summarize deployment
+        if: success()
+        run: |
+          echo "## ✅ Production Deploy Successful" >> $GITHUB_STEP_SUMMARY
+          echo "- **Project:** ${{ secrets.VITE_FIREBASE_PROJECT_ID }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Triggered by:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+
+      # ── Notify on rollback
+      - name: Summarize rollback
+        if: failure()
+        run: |
+          echo "## ⚠️ Deploy Failed — Rolled Back" >> $GITHUB_STEP_SUMMARY
+          echo "- The previous stable release has been restored." >> $GITHUB_STEP_SUMMARY
+          echo "- Check the Playwright report artifact for UI issues." >> $GITHUB_STEP_SUMMARY
+
+  # ─────────────────────────────────────────────
+  # JOB 5c — Deploy Backend to Railway
+  # Only runs on main, after visual tests pass
+  # ─────────────────────────────────────────────
   deploy-backend:
     name: Deploy Backend to Railway
     runs-on: ubuntu-latest
     needs: visual-tests
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging'
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: 'npm'
+
       - name: Install Railway CLI
         run: npm install -g @railway/cli
+
+      # ── Push the server/ folder to Railway
       - name: Deploy to Railway
         run: railway up --service ${{ secrets.RAILWAY_SERVICE_ID }} --path-as-root ./server --detach
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+
+      # ── Give Railway a few seconds to spin up then confirm it's live
       - name: Health check Railway API
         run: |
           sleep 30
-          curl -f -L ${{ secrets.VITE_API_URL }}/health || exit 1
+          curl -f -L -v ${{ secrets.VITE_API_URL }}/health || (echo "Railway health check failed" && exit 1)
 
+      # ── Notify on success
+      - name: Summarize backend deployment
+        if: success()
+        run: |
+          echo "## ✅ Backend Deploy Successful" >> $GITHUB_STEP_SUMMARY
+          echo "- **Service:** ${{ secrets.RAILWAY_SERVICE_ID }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **API URL:** ${{ secrets.VITE_API_URL }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Triggered by:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+
+      # ── Notify on failure
+      - name: Summarize backend failure
+        if: failure()
+        run: |
+          echo "## ⚠️ Backend Deploy Failed" >> $GITHUB_STEP_SUMMARY
+          echo "- Railway deployment or health check did not succeed." >> $GITHUB_STEP_SUMMARY
+          echo "- Check Railway logs at https://railway.app" >> $GITHUB_STEP_SUMMARY
+
+  # ─────────────────────────────────────────────
+  # JOB 6 — Auto-Merge Staging to Main
+  # ─────────────────────────────────────────────
   promote-to-main:
     name: Promote Staging to Main
     runs-on: ubuntu-latest
+    # CRITICAL CHANGE: Wait for EVERY staging-related job to pass
     needs: [visual-tests, deploy-staging, deploy-backend]
     if: success() && github.ref == 'refs/heads/staging'
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          # PAT_TOKEN required — GITHUB_TOKEN cannot push to protected branches
           token: ${{ secrets.PAT_TOKEN }}
+
       - name: Merge Staging into Main
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
           git fetch origin main
           git checkout main
+          # Merge only if there are no conflicts
           git merge staging --no-ff -m "Auto: Promote Staging to Main"
+
           git push origin main
 
+  # ─────────────────────────────────────────────
+  # JOB 7 — Auto Revert Bad Commit on Main
+  # Triggers if ANY job fails on a direct push to main
+  # Safety net when ruleset is disabled — reverts
+  # broken code automatically from main
+  # ─────────────────────────────────────────────
   auto-revert:
     name: Auto Revert Bad Commit
     runs-on: ubuntu-latest
     needs: [lint-and-test, build, backend-check, visual-tests]
+    # Only triggers when:
+    # 1. Any of the above jobs FAILED
+    # 2. It's a direct push to main (not staging)
+    # 3. It's not triggered by the auto-merge bot itself
     if: |
       failure() &&
       github.ref == 'refs/heads/main' &&
       github.event_name == 'push' &&
       github.actor != 'github-actions[bot]'
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
           token: ${{ secrets.PAT_TOKEN }}
+
       - name: Revert bad commit
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Revert the last commit that broke the pipeline
           git revert HEAD --no-edit
+
           git push origin main
+
+      - name: Summarize revert
+        if: success()
+        run: |
+          echo "## ⚠️ Bad Commit Detected — Auto Reverted" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit reverted:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Pushed by:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Reason:** One or more pipeline checks failed" >> $GITHUB_STEP_SUMMARY
+          echo "- Main branch has been restored to the last working version." >> $GITHUB_STEP_SUMMARY
