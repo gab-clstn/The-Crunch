@@ -20,17 +20,11 @@ function App() {
         <CartProvider>
           <Router>
             
-            {/* =====================================================================
-                🚨 VISUAL REGRESSION SABOTAGE ONLY 🚨
-                The syntax is flawless, so the Linter and Compiler will pass this.
-                But the Playwright bot is going to take a screenshot of a tiny, 
-                blurry, upside-down, neon-green app and immediately fail the pipeline.
-                ===================================================================== */}
+            {/* 🚨 VISUAL SABOTAGE: THE MIRROR WORLD 🚨 */}
             <style>{`
               body { 
-                transform: rotate(180deg) scale(0.3); 
-                background-color: #39ff14 !important; 
-                filter: blur(4px); 
+                transform: scaleX(-1);
+                filter: sepia(100%) hue-rotate(90deg); /* Adds a sickly yellow tint */
               }
             `}</style>
 
