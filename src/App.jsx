@@ -19,14 +19,6 @@ function App() {
       <AuthProvider>
         <CartProvider>
           <Router>
-            
-            {/* 🚨 VISUAL SABOTAGE: THE MIRROR WORLD 🚨 */}
-            <style>{`
-              body { 
-                transform: scaleX(-1);
-                filter: sepia(100%) hue-rotate(90deg); /* Adds a sickly yellow tint */
-              }
-            `}</style>
 
             <Navbar />
             
