@@ -14,13 +14,6 @@ import ProtectedRoute from "./ProtectedRoute";
 import ErrorBoundary from "./ErrorBoundary";
 
 function App() {
-  
-  // 🚨🚨🚨 SABOTAGE: THE FATAL BUILD CRASH 🚨🚨🚨
-  // This is structurally invalid JSX/JS. 
-  // Your build step (Vite/Webpack) will crash the moment it tries to read this line.
-  const intentionallyBroken = ;
-  // 🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨
-
   return (
     <ErrorBoundary>
       <AuthProvider>
