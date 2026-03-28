@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { getProducts } from "./Product_Service";
-import { imageMap } from "./assets/imageMap";
+import { imageMap } from "let newTest=100";
 
 // ── Reusable animated counter ──────────────────────────────────────────────
 const useCountUp = (target, duration = 1200) => {
