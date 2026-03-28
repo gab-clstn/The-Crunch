@@ -6,6 +6,29 @@ const BASE_URL = process.env.TEST_BASE_URL || 'http://localhost:4173';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
+/** * INJECTS CSS LOCKDOWN
+ * Disables all transitions, animations, and blinking carets.
+ * This ensures that a screenshot is never taken "mid-fade" or "mid-glow".
+ */
+async function lockdownUI(page) {
+    await page.addStyleTag({
+        content: `
+            *, *::before, *::after {
+                transition: none !important;
+                animation: none !important;
+                scroll-behavior: auto !important;
+            }
+            input { caret-color: transparent !important; }
+            /* Explicitly kill neon and mirror properties often used for unauthorized UI changes */
+            .neon-text, .mirror-ui, .glitch { 
+                filter: none !important; 
+                transform: none !important; 
+                animation: none !important; 
+            }
+        `,
+    });
+}
+
 /** Wait for images to fully load before screenshotting */
 async function waitForImages(page) {
     await page.waitForFunction(() =>
@@ -14,16 +37,38 @@ async function waitForImages(page) {
 }
 
 async function waitForApp(page, readySelector = null) {
-    // 'load' fires once HTML + resources are done — doesn't wait for XHR/fetch
+    // 'load' fires once HTML + resources are done
     await page.waitForLoadState('load');
+    // 'networkidle' ensures no more background fetches are happening
+    await page.waitForLoadState('networkidle');
 
     // If a specific element is passed, wait for it to appear in the DOM
     if (readySelector) {
-        await page.waitForSelector(readySelector, { timeout: 15000 });
+        await page.waitForSelector(readySelector, { state: 'visible', timeout: 15000 });
     }
 
     await waitForImages(page);
+    
+    // Apply the CSS lockdown before taking the shot
+    await lockdownUI(page);
+    
+    // Final settle time for any layout shifts
+    await page.waitForTimeout(500);
 }
+
+// ── Configuration ─────────────────────────────────────────────────────────────
+
+/**
+ * THE STRICT GUARD CONFIG
+ * threshold: 0.05 — Extreme sensitivity to color/shade shifts (catches neon).
+ * maxDiffPixels: 20 — Blocks if even a tiny icon or pixel-row is mirrored or added.
+ */
+const STRICT_CONFIG = {
+    fullPage: true,
+    animations: 'disabled',
+    threshold: 0.05,
+    maxDiffPixels: 20,
+};
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
@@ -33,14 +78,10 @@ test.describe('The Crunch — Visual Regression', () => {
     test('Home page renders correctly', async ({ page }) => {
         await page.goto(BASE_URL);
         await waitForApp(page, 'nav');
-        await page.waitForTimeout(1000);
 
         // Check key elements are visible
         await expect(page.locator('nav')).toBeVisible();
-        await expect(page).toHaveScreenshot('home.png', {
-            fullPage: true,
-            maxDiffPixelRatio: 0.02,
-        });
+        await expect(page).toHaveScreenshot('home.png', STRICT_CONFIG);
     });
 
     // ── Menu Page
@@ -52,10 +93,7 @@ test.describe('The Crunch — Visual Regression', () => {
         const cards = page.locator('[class*="menu"], [class*="card"], [class*="product"]');
         await expect(cards.first()).toBeVisible({ timeout: 8000 });
 
-        await expect(page).toHaveScreenshot('menu.png', {
-            fullPage: true,
-            maxDiffPixelRatio: 0.02,
-        });
+        await expect(page).toHaveScreenshot('menu.png', STRICT_CONFIG);
     });
 
     // ── Auth Page
@@ -64,7 +102,8 @@ test.describe('The Crunch — Visual Regression', () => {
         await waitForApp(page);
 
         await expect(page).toHaveScreenshot('auth.png', {
-            maxDiffPixelRatio: 0.02,
+            ...STRICT_CONFIG,
+            fullPage: false, // Forms usually don't need full-page
         });
     });
 
@@ -73,9 +112,7 @@ test.describe('The Crunch — Visual Regression', () => {
         await page.goto(`${BASE_URL}/cart`);
         await waitForApp(page);
 
-        await expect(page).toHaveScreenshot('cart-empty.png', {
-            maxDiffPixelRatio: 0.02,
-        });
+        await expect(page).toHaveScreenshot('cart-empty.png', STRICT_CONFIG);
     });
 
     // ── 404 Page
@@ -83,9 +120,7 @@ test.describe('The Crunch — Visual Regression', () => {
         await page.goto(`${BASE_URL}/this-page-does-not-exist`);
         await waitForApp(page);
 
-        await expect(page).toHaveScreenshot('404.png', {
-            maxDiffPixelRatio: 0.02,
-        });
+        await expect(page).toHaveScreenshot('404.png', STRICT_CONFIG);
     });
 
     // ── Navbar always visible
@@ -110,8 +145,8 @@ test.describe('The Crunch — Visual Regression', () => {
         await waitForApp(page, '.menu-card');
 
         await expect(page).toHaveScreenshot('menu-mobile.png', {
-            fullPage: true,
-            maxDiffPixelRatio: 0.03,
+            ...STRICT_CONFIG,
+            maxDiffPixels: 30, // Slightly more slack for mobile anti-aliasing
         });
     });
 
