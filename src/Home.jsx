@@ -23,7 +23,7 @@ const useCountUp = (target, duration = 1200) => {
 // FIX: Each stat gets its own component so useCountUp is called at the top
 // level of a component, not inside a .map() callback (Rules of Hooks).
 const statData = [
-    { value: 12, suffix: "+", label: "Signature Flavors" },
+    { value: 12, suffix: "+", label: "Working tests" },
     { value: 50, suffix: "K+", label: "Orders Served" },
     { value: 4, suffix: ".9★", label: "Average Rating" },
     { value: 100, suffix: "%", label: "Boneless Guaranteed" },
