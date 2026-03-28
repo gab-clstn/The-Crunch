@@ -1,6 +1,8 @@
-import React, { createContext, useContext, useState } from "react";
-
-const CartContext = createContext();
+// src/Cart_Context.jsx
+// Exports ONLY the CartProvider component — satisfies Vite Fast Refresh.
+// CartContext lives in CartContext.js; the useCart hook lives in useCart.js.
+import React, { useState } from "react";
+import { CartContext } from "./CartContext";
 
 export const CartProvider = ({ children }) => {
     const [cartItems, setCartItems] = useState([]);
@@ -28,7 +30,6 @@ export const CartProvider = ({ children }) => {
         }
     };
 
-    // ← This was missing, Order Panel's ✕ button needs it
     const removeFromCart = (id) => {
         setCartItems(prev => prev.filter(item => item.id !== id));
     };
@@ -41,5 +42,3 @@ export const CartProvider = ({ children }) => {
         </CartContext.Provider>
     );
 };
-
-export const useCart = () => useContext(CartContext);

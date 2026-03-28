@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useAuth } from "./Auth_Context";
+import { useAuth } from "./useAuth";
 import { useNavigate } from "react-router-dom";
 import { getProducts, addProduct, updateProduct, deleteProduct } from "./Product_Service";
 import { subscribeToAllOrders, updateOrderStatus } from "./Orders_Service";
@@ -370,16 +370,20 @@ const AdminPanel = () => {
     // 🔔 Real-time new-order notifications for admin
     useNotifications({ userId: "admin", role: "admin" });
 
-    useEffect(() => {
-        if (!authLoading && !isAdmin) navigate("/");
-    }, [isAdmin, authLoading]);
-
-    useEffect(() => { loadProducts(); }, []);
-
+    // ✅ 1. MOVE THE DEFINITION HERE (ABOVE THE USEEFFECT)
     const loadProducts = async () => {
         const data = await getProducts();
         setProducts(data);
     };
+
+    useEffect(() => {
+        if (!authLoading && !isAdmin) navigate("/");
+    }, [isAdmin, authLoading, navigate]);
+
+    // ✅ 2. NOW THIS CAN SAFELY ACCESS loadProducts
+    useEffect(() => { 
+        loadProducts(); 
+    }, []);
 
     const handleImageUpload = (e) => {
         const file = e.target.files[0];

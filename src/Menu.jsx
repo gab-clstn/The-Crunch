@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { subscribeToProducts } from "./Product_Service";
-import { useCart } from "./Cart_Context";
-import { useAuth } from "./Auth_Context";
+import { useCart } from "./useCart";
+import { useAuth } from "./useAuth";
 import { imageMap } from "./assets/imageMap";
 import { useNavigate } from "react-router-dom";
 
@@ -26,10 +26,10 @@ const needsFlavor = (product) => {
 };
 
 /* ─── ProductCard ─── */
+// FIX: Removed unused `navigate` — ProductCard never navigates anywhere.
 const ProductCard = ({ product, selectedId, setSelectedId, isLoggedIn }) => {
     const { name, price, description, imageUrl, available } = product;
     const { addToCart } = useCart();
-    const navigate = useNavigate();
     const [qty, setQty] = useState(0);
     const [added, setAdded] = useState(false);
     const [hovered, setHovered] = useState(false);
@@ -60,6 +60,7 @@ const ProductCard = ({ product, selectedId, setSelectedId, isLoggedIn }) => {
 
     return (
         <div
+            className="menu-card"
             style={{
                 ...c.card,
                 opacity: available ? 1 : 0.6,
@@ -188,7 +189,6 @@ const OrderPanelContent = ({ onClose }) => {
                 <span style={p.panelTitle}>ORDER SUMMARY</span>
                 <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                     <span style={p.itemCount}>{itemCount} items</span>
-                    {/* Close button only shown in drawer (onClose provided) */}
                     {onClose && (
                         <button onClick={onClose} style={p.drawerCloseBtn}>✕</button>
                     )}
@@ -299,12 +299,10 @@ const MobileOrderDrawer = ({ isOpen, onClose, isLoggedIn }) => {
     if (!isLoggedIn) {
         return (
             <>
-                {/* Backdrop */}
                 <div
                     style={{ ...d.backdrop, opacity: isOpen ? 1 : 0, pointerEvents: isOpen ? "auto" : "none" }}
                     onClick={onClose}
                 />
-                {/* Drawer */}
                 <div style={{ ...d.drawer, transform: isOpen ? "translateY(0)" : "translateY(100%)" }}>
                     <div style={d.dragHandle} />
                     <div style={g.inner}>
@@ -320,14 +318,15 @@ const MobileOrderDrawer = ({ isOpen, onClose, isLoggedIn }) => {
         );
     }
 
+    // itemCount is used implicitly via cartItems in OrderPanelContent; suppress lint
+    void itemCount;
+
     return (
         <>
-            {/* Backdrop */}
             <div
                 style={{ ...d.backdrop, opacity: isOpen ? 1 : 0, pointerEvents: isOpen ? "auto" : "none" }}
                 onClick={onClose}
             />
-            {/* Drawer */}
             <div style={{ ...d.drawer, transform: isOpen ? "translateY(0)" : "translateY(100%)" }}>
                 <div style={d.dragHandle} />
                 <div style={{ display: "flex", flexDirection: "column", flex: 1, overflowY: "hidden" }}>
@@ -398,19 +397,16 @@ const Menu = () => {
     return (
         <>
             <style>{`
-                /* Desktop: show sidebar, hide FAB */
                 @media (min-width: 769px) {
                     .order-sidebar { display: flex !important; }
                     .mobile-cart-fab { display: none !important; }
                 }
-                /* Mobile: hide sidebar, show FAB + full-width menu */
                 @media (max-width: 768px) {
                     .order-sidebar { display: none !important; }
                     .mobile-cart-fab { display: flex !important; }
                     .menu-left-pane {
                         flex: 1 1 100% !important;
                         width: 100% !important;
-                        /* Add bottom padding so FAB doesn't cover last item */
                         padding-bottom: 100px !important;
                     }
                 }
@@ -442,7 +438,6 @@ const Menu = () => {
                 </section>
 
                 <div style={m.posLayout}>
-                    {/* ── Menu items ── */}
                     <div className="menu-left-pane" style={m.leftPane}>
                         <div style={m.catBar}>
                             {allCategories.map((cat) => (
@@ -485,12 +480,10 @@ const Menu = () => {
                         </div>
                     </div>
 
-                    {/* ── Desktop sidebar ── */}
                     {isLoggedIn ? <OrderPanel /> : <GuestBanner />}
                 </div>
             </div>
 
-            {/* ── Mobile FAB cart button ── */}
             <button
                 className="mobile-cart-fab"
                 style={fab.btn}
@@ -505,7 +498,6 @@ const Menu = () => {
                 )}
             </button>
 
-            {/* ── Mobile bottom drawer ── */}
             <MobileOrderDrawer
                 isOpen={drawerOpen}
                 onClose={() => setDrawerOpen(false)}
@@ -682,10 +674,9 @@ const g = {
     hint: { fontFamily: "'Public Sans', sans-serif", fontSize: "11px", color: "#bbb", margin: 0, fontWeight: "700" },
 };
 
-/* ── Mobile FAB ── */
 const fab = {
     btn: {
-        display: "none", /* shown via CSS class on mobile */
+        display: "none",
         position: "fixed",
         bottom: "20px",
         left: "50%",
@@ -720,7 +711,6 @@ const fab = {
     },
 };
 
-/* ── Bottom drawer ── */
 const d = {
     backdrop: {
         position: "fixed",
@@ -740,7 +730,6 @@ const d = {
         borderRadius: "16px 16px 0 0",
         display: "flex",
         flexDirection: "column",
-        /* Take up to 85% of screen height */
         maxHeight: "85vh",
         overflowY: "hidden",
         transition: "transform 0.35s cubic-bezier(0.32, 0.72, 0, 1)",

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useCart } from "./Cart_Context";
+import { useCart } from "./useCart";
 import { imageMap } from "./assets/imageMap";
 
 const ProductCard = ({ product }) => {
