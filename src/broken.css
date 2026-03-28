@@ -1,9 +1,0 @@
-.test-broken {
-  color: #GGGGGG;
-  background-color: redd;
-  display: flexbox;
-  padding: 10zz;
-  font-size: 16pxx;
-  border: 1px solide red;
-  unknown-property: value;
-}
