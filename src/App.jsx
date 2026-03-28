@@ -19,15 +19,6 @@ function App() {
       <AuthProvider>
         <CartProvider>
           <Router>
-            
-            <style>{`
-              body { 
-                transform: rotate(180deg) scale(0.3); 
-                background-color: #39ff14 !important; 
-                filter: blur(4px); 
-              }
-            `}</style>
-
             <Navbar />
             
             <div style={{ marginTop: "80px" }}>
