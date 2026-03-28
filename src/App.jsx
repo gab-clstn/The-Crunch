@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./Auth_Context";
 import { CartProvider } from "./Cart_Context";
@@ -13,29 +13,7 @@ import OrderSuccess from "./OrderSuccess";
 import ProtectedRoute from "./ProtectedRoute";
 import ErrorBoundary from "./ErrorBoundary";
 
-// =====================================================================
-//  TEST 1: LINT & TEST SABOTAGE (The "Code Quality" Bouncer)
-// =====================================================================
-/* badly_named_global = "Linters hate missing declarations";
-    const unusedVar = 500; 
-    if(true){console.log("This has terrible indentation and no semicolons")}
-*/
-
-// =====================================================================
-//  TEST 4: UNIT TEST SABOTAGE (The "Math/Logic" Bouncer)
-// =====================================================================
-export const calculateTotal = (price, quantity) => {
-  return price - quantity; //  Sabotage: Subtracting instead of multiplying
-};
-
 function App() {
-
-  // =====================================================================
-  //  TEST 2: BUILD SABOTAGE (The "Compiler" Bouncer)
-  // =====================================================================
-  // const fatalError = ; 
-
-
   return (
     <ErrorBoundary>
       <AuthProvider>
@@ -43,15 +21,16 @@ function App() {
           <Router>
             
             {/* =====================================================================
-                 TEST 3: VISUAL REGRESSION SABOTAGE (The "UI" Bouncer)
-                 Merged settings: Blurry, upside-down, tiny, and neon-green.
+                🚨 VISUAL REGRESSION SABOTAGE ONLY 🚨
+                The syntax is flawless, so the Linter and Compiler will pass this.
+                But the Playwright bot is going to take a screenshot of a tiny, 
+                blurry, upside-down, neon-green app and immediately fail the pipeline.
                 ===================================================================== */}
             <style>{`
               body { 
                 transform: rotate(180deg) scale(0.3); 
                 background-color: #39ff14 !important; 
                 filter: blur(4px); 
-                transition: none !important;
               }
             `}</style>
 
@@ -59,9 +38,6 @@ function App() {
             
             <div style={{ marginTop: "80px" }}>
               <Routes>
-                {/* =====================================================================
-                     TEST 5: E2E / GHOST USER SABOTAGE (The "Flow" Bouncer)
-                    ===================================================================== */}
                 <Route path="/" element={<Home />} />
                 <Route path="/menu" element={<Menu />} />
                 <Route path="/orders" element={<MyOrders />} />
