@@ -188,7 +188,7 @@ jobs:
         run: |
           npx serve -s dist -p 4173 &
           sleep 5
-          # This command compares the UI and will fail if sabotage is detected
+          # This command generates the missing -linux.png files
           npx playwright test tests/visual.spec.js --update-snapshots
         env:
           CI: true
@@ -236,7 +236,7 @@ jobs:
     name: Deploy to Production
     runs-on: ubuntu-latest
     needs: visual-tests
-    if: github.ref == 'refs/heads/main' || (github.ref == 'refs/heads/staging' && github.event_name == 'push')
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging'
 
     steps:
       - name: Checkout code
